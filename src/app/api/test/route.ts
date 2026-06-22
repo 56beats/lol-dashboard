@@ -3,7 +3,7 @@ import {
   getMatchIds,
   getMatch,
   extractMyParticipant,
-} from "@/src/lib/riot";
+} from "@/lib/riot";
 
 export async function GET() {
   const account = await getAccount();
