@@ -8,19 +8,42 @@ datasource db {
 }
 
 model Match {
-  id         String   @id
+  id        String   @id
 
-  champion   String
+  champion  String
+  win       Boolean
 
-  win        Boolean
+  kills     Int
+  deaths    Int
+  assists   Int
 
-  kills      Int
-  deaths     Int
-  assists    Int
+  gameMode  String
+  queueId   Int?
+  gameVersion String?
 
-  gameMode   String
+  item0     Int?
+  item1     Int?
+  item2     Int?
+  item3     Int?
+  item4     Int?
+  item5     Int?
+  item6     Int?
 
-  playedAt   DateTime
+  playedAt  DateTime
+  createdAt DateTime @default(now())
+}
 
-  createdAt  DateTime @default(now())
+model RankSnapshot {
+  id        String   @id @default(cuid())
+
+  queue     String
+
+  tier      String
+  rank      String
+  lp        Int
+
+  wins      Int
+  losses    Int
+
+  createdAt DateTime @default(now())
 }

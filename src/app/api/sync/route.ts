@@ -1,11 +1,11 @@
-import { prisma } from "@/src/lib/prisma";
+import { prisma } from "@/lib/prisma";
 
 import {
   getAccount,
   getMatch,
   getMatchIds,
   extractMyParticipant,
-} from "@/src/lib/riot";
+} from "@/lib/riot";
 
 export async function GET(request: Request) {
   const account = await getAccount();
@@ -34,7 +34,6 @@ export async function GET(request: Request) {
         id: matchId,
 
         champion: me.championName,
-
         win: me.win,
 
         kills: me.kills,
@@ -42,6 +41,19 @@ export async function GET(request: Request) {
         assists: me.assists,
 
         gameMode: match.info.gameMode,
+        queueId: match.info.queueId,
+
+        // その試合が行われたLoLクライアントのバージョン
+        // チャンピオン画像・アイテム画像を当時のバージョンで表示するために保存する
+        gameVersion: match.info.gameVersion,
+
+        item0: me.item0,
+        item1: me.item1,
+        item2: me.item2,
+        item3: me.item3,
+        item4: me.item4,
+        item5: me.item5,
+        item6: me.item6,
 
         playedAt: new Date(match.info.gameCreation),
       },

@@ -1,4 +1,4 @@
-import { getAccount, getMatchIds } from "@/src/lib/riot";
+import { getAccount, getMatchIds } from "@/lib/riot";
 
 export async function GET() {
   const account = await getAccount();

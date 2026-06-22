@@ -1,4 +1,4 @@
-import { getMatch } from "@/src/lib/riot";
+import { getMatch } from "@/lib/riot";
 
 export async function GET(
   request: Request,

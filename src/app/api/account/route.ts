@@ -1,4 +1,4 @@
-import { getAccount } from "@/src/lib/riot";
+import { getAccount } from "@/lib/riot";
 
 export async function GET() {
   try {

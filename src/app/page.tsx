@@ -1,13 +1,64 @@
-import { prisma } from "@/src/lib/prisma";
-import { DashboardHeader } from "@/src/components/DashboardHeader";
-import { MatchCard } from "@/src/components/MatchCard";
-import { StatCard } from "@/src/components/StatCard";
+import { prisma } from "@/lib/prisma";
+import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
+import { MatchCard } from "@/components/dashboard/MatchCard";
+import { StatCard } from "@/components/dashboard/StatCard";
+import { RankCard } from "@/components/dashboard/RankCard";
+import { RankChart } from "@/components/dashboard/RankChart";
+import { calculateRankScore } from "@/lib/rank";
+import { resolveDdragonVersion, getJapaneseChampionMap } from "@/lib/ddragon";
+import { formatShortRankWithLp } from "@/lib/rank";
 
 export default async function Home() {
   const matches = await prisma.match.findMany({
     orderBy: { playedAt: "desc" },
     take: 20,
   });
+
+  const championMap = await getJapaneseChampionMap();
+  const matchesWithVersion = await Promise.all(
+    matches.map(async (match) => ({
+      ...match,
+      ddragonVersion: await resolveDdragonVersion(match.gameVersion),
+    }))
+  );
+  const latestRank = await prisma.rankSnapshot.findFirst({
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+  const rankHistory = await prisma.rankSnapshot.findMany({
+    orderBy: {
+      createdAt: "asc",
+    },
+    take: 30,
+  });
+
+  const previousRank = rankHistory.at(-2);
+
+  /**
+   * 現在ランクと前回ランクの差分を計算する
+   */
+  const lpDiff =
+    latestRank && previousRank
+      ? calculateRankScore(latestRank.tier, latestRank.rank, latestRank.lp) -
+        calculateRankScore(
+          previousRank.tier,
+          previousRank.rank,
+          previousRank.lp
+        )
+      : undefined;
+
+  /**
+   * グラフ表示用データ
+   */
+  const rankChartData = rankHistory.map((rank) => ({
+    date: rank.createdAt.toLocaleDateString("ja-JP", {
+      month: "numeric",
+      day: "numeric",
+    }),
+    score: calculateRankScore(rank.tier, rank.rank, rank.lp),
+    label: formatShortRankWithLp(rank.tier, rank.rank, rank.lp),
+  }));
 
   const wins = matches.filter((m) => m.win).length;
   const losses = matches.length - wins;
@@ -36,17 +87,28 @@ export default async function Home() {
           </p>
         </section>
 
-        <section className="mt-6 grid gap-4 md:grid-cols-3">
+        <section className="mt-6 grid gap-4 md:grid-cols-4">
+          <RankCard
+            tier={latestRank?.tier}
+            rank={latestRank?.rank}
+            lp={latestRank?.lp}
+            wins={latestRank?.wins}
+            losses={latestRank?.losses}
+            lpDiff={lpDiff}
+          />
+
           <StatCard
             label="勝率"
             value={`${winRate}%`}
             subText={`${wins}勝 ${losses}敗`}
           />
+
           <StatCard
             label="平均KDA"
             value={avgKda}
             subText={`${totalKills} / ${totalDeaths} / ${totalAssists}`}
           />
+
           <StatCard
             label="試合数"
             value={matches.length}
@@ -54,20 +116,36 @@ export default async function Home() {
           />
         </section>
 
+        <section className="mt-6">
+          <RankChart data={rankChartData} />
+        </section>
+
         <section className="mt-10">
           <h2 className="text-2xl font-bold">最近の試合</h2>
 
           <div className="mt-4 space-y-3">
-            {matches.map((match) => (
+            {matchesWithVersion.map((match) => (
               <MatchCard
                 key={match.id}
                 champion={match.champion}
+                championJa={championMap[match.champion]}
                 win={match.win}
                 kills={match.kills}
                 deaths={match.deaths}
                 assists={match.assists}
                 gameMode={match.gameMode}
+                queueId={match.queueId}
                 playedAt={match.playedAt}
+                itemIds={[
+                  match.item0 ?? 0,
+                  match.item1 ?? 0,
+                  match.item2 ?? 0,
+                  match.item3 ?? 0,
+                  match.item4 ?? 0,
+                  match.item5 ?? 0,
+                  match.item6 ?? 0,
+                ]}
+                ddragonVersion={match.ddragonVersion}
               />
             ))}
           </div>
