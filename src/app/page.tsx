@@ -89,9 +89,11 @@ export default async function Home({ searchParams }: Props) {
         imageUrl: tftDisplayMaps.traits[trait.id]?.imageUrl,
       }))
       .sort((a, b) => {
+        const aStyle = a.style ?? 0;
+        const bStyle = b.style ?? 0;
         // まずティア順
-        if (a.style !== b.style) {
-          return b.style - a.style;
+        if (aStyle !== bStyle) {
+          return bStyle - aStyle;
         }
 
         // 同じティアなら発動数順
@@ -124,17 +126,11 @@ export default async function Home({ searchParams }: Props) {
         tftChampionMap.get(unit.id)?.imageUrl ??
         tftDisplayMaps.champions[unit.id]?.imageUrl,
 
-      // spriteは古い表示方式用。TftMatchCard側がまだ参照している場合の保険として残す
-      sprite: tftDisplayMaps.champions[unit.id]?.sprite,
-
       items: unit.itemIds.map((itemId) => ({
         ...(tftDisplayMaps.items[itemId] ?? {
           id: itemId,
           name: itemId,
         }),
-
-        // アイテムもスプライト画像で表示する
-        sprite: tftDisplayMaps.items[itemId]?.sprite,
       })),
     })),
   }));

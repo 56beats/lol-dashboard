@@ -68,17 +68,6 @@ function toDisplayMap(version: string, json: any) {
       imageUrl: item.image
         ? `${DDRAGON_BASE_URL}/cdn/${version}/img/${item.image.group}/${item.image.full}`
         : undefined,
-
-      // 小さいアイコンはsprite画像から切り抜く
-      sprite: item.image
-        ? {
-            url: `${DDRAGON_BASE_URL}/cdn/${version}/img/sprite/${item.image.sprite}`,
-            x: item.image.x,
-            y: item.image.y,
-            w: item.image.w,
-            h: item.image.h,
-          }
-        : undefined,
     };
   }
 
