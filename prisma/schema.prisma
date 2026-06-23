@@ -4,7 +4,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("POSTGRES_PRISMA_URL")
+  url      = env("POSTGRES_URL_NON_POOLING")
 }
 
 model Match {
@@ -46,4 +46,43 @@ model RankSnapshot {
   losses    Int
 
   createdAt DateTime @default(now())
+}
+
+model TftMatch {
+  id        String   @id
+
+  placement Int
+  level     Int
+
+  augments  Json
+  traits    Json
+  units     Json
+
+  playedAt  DateTime
+  createdAt DateTime @default(now())
+}
+
+model TftRankSnapshot {
+  id        String   @id @default(cuid())
+
+  queue     String
+
+  tier      String
+  rank      String
+  lp        Int
+
+  wins      Int
+  losses    Int
+
+  createdAt DateTime @default(now())
+}
+
+model TftChampion {
+  id        String   @id // 例: TFT17_Teemo
+  name      String
+  cost      Int?
+  imageUrl  String
+  ddragonImageUrl String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

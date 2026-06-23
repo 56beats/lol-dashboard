@@ -5,6 +5,10 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: "https",
+        hostname: "raw.communitydragon.org",
+      },
+      {
+        protocol: "https",
         hostname: "ddragon.leagueoflegends.com",
       },
     ],

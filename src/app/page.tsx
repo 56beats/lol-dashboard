@@ -1,31 +1,41 @@
-import { prisma } from "@/lib/prisma";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { MatchCard } from "@/components/dashboard/MatchCard";
-import { StatCard } from "@/components/dashboard/StatCard";
 import { RankCard } from "@/components/dashboard/RankCard";
 import { RankChart } from "@/components/dashboard/RankChart";
-import { calculateRankScore } from "@/lib/rank";
-import { resolveDdragonVersion, getJapaneseChampionMap } from "@/lib/ddragon";
-import { formatShortRankWithLp } from "@/lib/rank";
+import { StatCard } from "@/components/dashboard/StatCard";
+import { TftMatchCard } from "@/components/dashboard/TftMatchCard";
+import { getJapaneseChampionMap, resolveDdragonVersion } from "@/lib/ddragon";
+import { prisma } from "@/lib/prisma";
+import { calculateRankScore, formatShortRankWithLp } from "@/lib/rank";
+import { getTftDisplayMaps } from "@/lib/tft/ddragon";
+import type { TftTrait, TftUnit } from "@/types/tft";
 
-export default async function Home() {
+type Props = {
+  searchParams?: Promise<{
+    game?: string;
+  }>;
+};
+
+export default async function Home({ searchParams }: Props) {
+  const params = await searchParams;
+  const activeGame = params?.game === "tft" ? "tft" : "lol";
+
   const matches = await prisma.match.findMany({
     orderBy: { playedAt: "desc" },
     take: 20,
   });
 
   const championMap = await getJapaneseChampionMap();
+
   const matchesWithVersion = await Promise.all(
     matches.map(async (match) => ({
       ...match,
+
+      // 試合ごとのgameVersionから、Data Dragonで存在する近いバージョンを解決する
       ddragonVersion: await resolveDdragonVersion(match.gameVersion),
     }))
   );
-  const latestRank = await prisma.rankSnapshot.findFirst({
-    orderBy: {
-      createdAt: "desc",
-    },
-  });
+
   const rankHistory = await prisma.rankSnapshot.findMany({
     orderBy: {
       createdAt: "asc",
@@ -33,7 +43,118 @@ export default async function Home() {
     take: 30,
   });
 
+  const latestRank = rankHistory.at(-1);
   const previousRank = rankHistory.at(-2);
+
+  // TFTランク履歴を古い順で取得する
+  // RankChartで推移グラフとして使う
+  const tftRankHistory = await prisma.tftRankSnapshot.findMany({
+    orderBy: {
+      createdAt: "asc",
+    },
+    take: 30,
+  });
+
+  // 最新TFTランクは履歴の最後を使う
+  const latestTftRank = tftRankHistory.at(-1);
+  const tftMatches = await prisma.tftMatch.findMany({
+    orderBy: {
+      playedAt: "desc",
+    },
+    take: 20,
+  });
+
+  // DBに同期済みのCommunityDragon画像付きTFTチャンピオン一覧を取得する
+  const tftChampions = await prisma.tftChampion.findMany();
+
+  // TFTユニットIDからチャンピオン情報をすぐ取得できるようにMap化する
+  // 例: TFT17_Aatrox -> { name, imageUrl, ... }
+  const tftChampionMap = new Map(
+    tftChampions.map((champion) => [champion.id, champion])
+  );
+
+  const tftDisplayMaps = await getTftDisplayMaps();
+
+  const tftMatchesWithDisplay = tftMatches.map((match) => ({
+    ...match,
+
+    augments: (match.augments as string[]).map(
+      (id) => tftDisplayMaps.augments[id] ?? { id, name: id }
+    ),
+
+    traits: (match.traits as TftTrait[])
+      .map((trait) => ({
+        ...trait,
+        name: tftDisplayMaps.traits[trait.id]?.name ?? trait.id,
+        imageUrl: tftDisplayMaps.traits[trait.id]?.imageUrl,
+      }))
+      .sort((a, b) => {
+        // まずティア順
+        if (a.style !== b.style) {
+          return b.style - a.style;
+        }
+
+        // 同じティアなら発動数順
+        return b.numUnits - a.numUnits;
+      }),
+
+    /**
+     * TFTユニット情報を画面表示用へ変換する
+     *
+     * DBには
+     * TFT17_Kindred
+     * TFT_Item_GuinsoosRageblade
+     *
+     * のようなIDしか保存していないため、
+     * Data Dragonを使って
+     * 日本語名・画像URLへ変換する。
+     */
+    units: (match.units as TftUnit[]).map((unit) => ({
+      ...unit,
+
+      // DBに保存したCommunityDragon画像付きチャンピオン情報を取得する
+      // なければData Dragon側の表示情報にフォールバックする
+      name:
+        tftChampionMap.get(unit.id)?.name ??
+        tftDisplayMaps.champions[unit.id]?.name ??
+        unit.id,
+
+      // チャンピオン画像はDBに保存したCommunityDragon画像を優先する
+      imageUrl:
+        tftChampionMap.get(unit.id)?.imageUrl ??
+        tftDisplayMaps.champions[unit.id]?.imageUrl,
+
+      // spriteは古い表示方式用。TftMatchCard側がまだ参照している場合の保険として残す
+      sprite: tftDisplayMaps.champions[unit.id]?.sprite,
+
+      items: unit.itemIds.map((itemId) => ({
+        ...(tftDisplayMaps.items[itemId] ?? {
+          id: itemId,
+          name: itemId,
+        }),
+
+        // アイテムもスプライト画像で表示する
+        sprite: tftDisplayMaps.items[itemId]?.sprite,
+      })),
+    })),
+  }));
+
+  console.log("teemo display", tftDisplayMaps.champions["TFT17_Teemo"]);
+
+  const averagePlacement =
+    tftMatches.length > 0
+      ? (
+          tftMatches.reduce((sum, match) => sum + match.placement, 0) /
+          tftMatches.length
+        ).toFixed(2)
+      : "-";
+
+  const top4Count = tftMatches.filter((match) => match.placement <= 4).length;
+
+  const top4Rate =
+    tftMatches.length > 0
+      ? Math.round((top4Count / tftMatches.length) * 100)
+      : 0;
 
   /**
    * 現在ランクと前回ランクの差分を計算する
@@ -49,9 +170,21 @@ export default async function Home() {
       : undefined;
 
   /**
-   * グラフ表示用データ
+   * LoLランク履歴をグラフ表示用の形に変換する
    */
   const rankChartData = rankHistory.map((rank) => ({
+    date: rank.createdAt.toLocaleDateString("ja-JP", {
+      month: "numeric",
+      day: "numeric",
+    }),
+    score: calculateRankScore(rank.tier, rank.rank, rank.lp),
+    label: formatShortRankWithLp(rank.tier, rank.rank, rank.lp),
+  }));
+
+  /**
+   * TFTランク履歴をグラフ表示用の形に変換する
+   */
+  const tftRankChartData = tftRankHistory.map((rank) => ({
     date: rank.createdAt.toLocaleDateString("ja-JP", {
       month: "numeric",
       day: "numeric",
@@ -87,69 +220,151 @@ export default async function Home() {
           </p>
         </section>
 
-        <section className="mt-6 grid gap-4 md:grid-cols-4">
-          <RankCard
-            tier={latestRank?.tier}
-            rank={latestRank?.rank}
-            lp={latestRank?.lp}
-            wins={latestRank?.wins}
-            losses={latestRank?.losses}
-            lpDiff={lpDiff}
-          />
+        <div className="mt-6 flex gap-2">
+          <a
+            href="/?game=lol"
+            className={[
+              "rounded-xl px-4 py-2 text-sm font-bold",
+              activeGame === "lol"
+                ? "bg-blue-600 text-white"
+                : "bg-white/10 text-slate-300 hover:bg-white/20",
+            ].join(" ")}
+          >
+            LoL
+          </a>
 
-          <StatCard
-            label="勝率"
-            value={`${winRate}%`}
-            subText={`${wins}勝 ${losses}敗`}
-          />
+          <a
+            href="/?game=tft"
+            className={[
+              "rounded-xl px-4 py-2 text-sm font-bold",
+              activeGame === "tft"
+                ? "bg-emerald-600 text-white"
+                : "bg-white/10 text-slate-300 hover:bg-white/20",
+            ].join(" ")}
+          >
+            TFT
+          </a>
+        </div>
 
-          <StatCard
-            label="平均KDA"
-            value={avgKda}
-            subText={`${totalKills} / ${totalDeaths} / ${totalAssists}`}
-          />
-
-          <StatCard
-            label="試合数"
-            value={matches.length}
-            subText="最近20試合"
-          />
-        </section>
-
-        <section className="mt-6">
-          <RankChart data={rankChartData} />
-        </section>
-
-        <section className="mt-10">
-          <h2 className="text-2xl font-bold">最近の試合</h2>
-
-          <div className="mt-4 space-y-3">
-            {matchesWithVersion.map((match) => (
-              <MatchCard
-                key={match.id}
-                champion={match.champion}
-                championJa={championMap[match.champion]}
-                win={match.win}
-                kills={match.kills}
-                deaths={match.deaths}
-                assists={match.assists}
-                gameMode={match.gameMode}
-                queueId={match.queueId}
-                playedAt={match.playedAt}
-                itemIds={[
-                  match.item0 ?? 0,
-                  match.item1 ?? 0,
-                  match.item2 ?? 0,
-                  match.item3 ?? 0,
-                  match.item4 ?? 0,
-                  match.item5 ?? 0,
-                  match.item6 ?? 0,
-                ]}
-                ddragonVersion={match.ddragonVersion}
+        {activeGame === "lol" ? (
+          <>
+            <section className="mt-6 grid gap-4 md:grid-cols-4">
+              <RankCard
+                tier={latestRank?.tier}
+                rank={latestRank?.rank}
+                lp={latestRank?.lp}
+                wins={latestRank?.wins}
+                losses={latestRank?.losses}
+                lpDiff={lpDiff}
               />
-            ))}
-          </div>
-        </section>
+
+              <StatCard
+                label="勝率"
+                value={`${winRate}%`}
+                subText={`${wins}勝 ${losses}敗`}
+              />
+
+              <StatCard
+                label="平均KDA"
+                value={avgKda}
+                subText={`${totalKills} / ${totalDeaths} / ${totalAssists}`}
+              />
+
+              <StatCard
+                label="試合数"
+                value={matches.length}
+                subText="最近20試合"
+              />
+            </section>
+
+            <section className="mt-6">
+              <RankChart data={rankChartData} />
+            </section>
+
+            <section className="mt-10">
+              <h2 className="text-2xl font-bold">最近の試合</h2>
+
+              <div className="mt-4 space-y-3">
+                {matchesWithVersion.map((match) => (
+                  <MatchCard
+                    key={match.id}
+                    champion={match.champion}
+                    championJa={championMap[match.champion]}
+                    win={match.win}
+                    kills={match.kills}
+                    deaths={match.deaths}
+                    assists={match.assists}
+                    gameMode={match.gameMode}
+                    queueId={match.queueId}
+                    playedAt={match.playedAt}
+                    itemIds={[
+                      match.item0 ?? 0,
+                      match.item1 ?? 0,
+                      match.item2 ?? 0,
+                      match.item3 ?? 0,
+                      match.item4 ?? 0,
+                      match.item5 ?? 0,
+                      match.item6 ?? 0,
+                    ]}
+                    ddragonVersion={match.ddragonVersion}
+                  />
+                ))}
+              </div>
+            </section>
+          </>
+        ) : (
+          <>
+            <section className="mt-6 grid gap-4 md:grid-cols-4">
+              <RankCard
+                tier={latestTftRank?.tier}
+                rank={latestTftRank?.rank}
+                lp={latestTftRank?.lp}
+                wins={latestTftRank?.wins}
+                losses={latestTftRank?.losses}
+              />
+
+              <StatCard
+                label="平均順位"
+                value={averagePlacement}
+                subText="最近20試合"
+              />
+
+              <StatCard
+                label="Top4率"
+                value={`${top4Rate}%`}
+                subText={`${top4Count} / ${tftMatches.length}`}
+              />
+
+              <StatCard
+                label="試合数"
+                value={tftMatches.length}
+                subText="最近20試合"
+              />
+            </section>
+
+            <section className="mt-6">
+              <RankChart data={tftRankChartData} />
+            </section>
+
+            <section className="mt-10">
+              <h2 className="text-2xl font-bold">最近のTFT試合</h2>
+
+              <div className="mt-4 space-y-3">
+                {tftMatchesWithDisplay.map((match) => (
+                  <TftMatchCard
+                    key={match.id}
+                    placement={match.placement}
+                    level={match.level}
+                    augments={match.augments}
+                    traits={match.traits}
+                    units={match.units}
+                    playedAt={match.playedAt}
+                  />
+                ))}
+              </div>
+            </section>
+          </>
+        )}
       </div>
     </main>
   );

@@ -18,6 +18,18 @@ export function DashboardHeader() {
           >
             LP同期
           </a>
+          <a
+            href="/api/tft-sync"
+            className="rounded-xl bg-purple-600 px-4 py-2 text-sm font-bold text-white hover:bg-purple-500"
+          >
+            TFT試合同期
+          </a>
+          <a
+            href="/api/tft-sync-rank"
+            className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-500"
+          >
+            TFT LP同期
+          </a>
         </div>
       </div>
     </header>
