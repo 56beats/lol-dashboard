@@ -6,7 +6,7 @@ export function DashboardHeader() {
 
         <div className="flex gap-2">
           <a
-            href="/api/sync"
+            href="/api/sync-lol-matches"
             className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-500"
           >
             試合同期

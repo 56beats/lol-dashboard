@@ -4,7 +4,7 @@ import { RankCard } from "@/components/dashboard/RankCard";
 import { RankChart } from "@/components/dashboard/RankChart";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { TftMatchCard } from "@/components/dashboard/TftMatchCard";
-import { getJapaneseChampionMap, resolveDdragonVersion } from "@/lib/ddragon";
+import { resolveDdragonVersion } from "@/lib/ddragon";
 import { prisma } from "@/lib/prisma";
 import { calculateRankScore, formatShortRankWithLp } from "@/lib/rank";
 import { getTftDisplayMaps } from "@/lib/tft/ddragon";
@@ -20,20 +20,88 @@ export default async function Home({ searchParams }: Props) {
   const params = await searchParams;
   const activeGame = params?.game === "tft" ? "tft" : "lol";
 
-  const matches = await prisma.match.findMany({
-    orderBy: { playedAt: "desc" },
+  const myPuuid = process.env.RIOT_PUUID;
+
+  /**
+   * 新しいLoL試合保存構造から最近20試合を取得する
+   *
+   * LolMatch:
+   *   試合全体の情報
+   *
+   * LolParticipant:
+   *   10人分の参加者情報
+   *
+   * ここではまず、自分の参加者情報だけを取得して
+   * 既存のMatchCardで表示できる形へ変換する。
+   */
+  const lolMatches = await prisma.lolMatch.findMany({
+    orderBy: {
+      playedAt: "desc",
+    },
     take: 20,
+    include: {
+      participants: {
+        where: {
+          puuid: myPuuid,
+        },
+      },
+    },
   });
 
-  const championMap = await getJapaneseChampionMap();
+  /**
+   * LoLチャンピオン情報をDBから取得する
+   *
+   * championIdはRiot API上では数値key。
+   * 例:
+   *   Senna -> 235
+   */
+  const lolChampions = await prisma.lolChampion.findMany();
 
-  const matchesWithVersion = await Promise.all(
-    matches.map(async (match) => ({
-      ...match,
+  const lolChampionMap = new Map(
+    lolChampions.map((champion) => [champion.key, champion])
+  );
 
-      // 試合ごとのgameVersionから、Data Dragonで存在する近いバージョンを解決する
-      ddragonVersion: await resolveDdragonVersion(match.gameVersion),
-    }))
+  /**
+   * LolMatch + 自分のLolParticipant を
+   * 既存のMatchCardが扱える形に変換する
+   */
+  const lolMatchesForDisplay = await Promise.all(
+    lolMatches.map(async (match) => {
+      const me = match.participants[0];
+
+      if (!me) {
+        return null;
+      }
+
+      const champion = lolChampionMap.get(me.championId);
+
+      return {
+        id: match.matchId,
+        champion: me.championName,
+        championJa: champion?.nameJa ?? me.championName,
+        win: me.win,
+        kills: me.kills,
+        deaths: me.deaths,
+        assists: me.assists,
+        gameMode: match.gameMode,
+        queueId: match.queueId,
+        playedAt: match.playedAt,
+        itemIds: [
+          me.item0 ?? 0,
+          me.item1 ?? 0,
+          me.item2 ?? 0,
+          me.item3 ?? 0,
+          me.item4 ?? 0,
+          me.item5 ?? 0,
+          me.item6 ?? 0,
+        ],
+        ddragonVersion: await resolveDdragonVersion(match.gameVersion),
+      };
+    })
+  ).then((matches) =>
+    matches.filter(
+      (match): match is NonNullable<typeof match> => match !== null
+    )
   );
 
   const rankHistory = await prisma.rankSnapshot.findMany({
@@ -135,8 +203,6 @@ export default async function Home({ searchParams }: Props) {
     })),
   }));
 
-  console.log("teemo display", tftDisplayMaps.champions["TFT17_Teemo"]);
-
   const averagePlacement =
     tftMatches.length > 0
       ? (
@@ -189,14 +255,22 @@ export default async function Home({ searchParams }: Props) {
     label: formatShortRankWithLp(rank.tier, rank.rank, rank.lp),
   }));
 
-  const wins = matches.filter((m) => m.win).length;
-  const losses = matches.length - wins;
+  const wins = lolMatchesForDisplay.filter((m) => m.win).length;
+  const losses = lolMatchesForDisplay.length - wins;
   const winRate =
-    matches.length > 0 ? Math.round((wins / matches.length) * 100) : 0;
+    lolMatchesForDisplay.length > 0
+      ? Math.round((wins / lolMatchesForDisplay.length) * 100)
+      : 0;
 
-  const totalKills = matches.reduce((sum, m) => sum + m.kills, 0);
-  const totalDeaths = matches.reduce((sum, m) => sum + m.deaths, 0);
-  const totalAssists = matches.reduce((sum, m) => sum + m.assists, 0);
+  const totalKills = lolMatchesForDisplay.reduce((sum, m) => sum + m.kills, 0);
+  const totalDeaths = lolMatchesForDisplay.reduce(
+    (sum, m) => sum + m.deaths,
+    0
+  );
+  const totalAssists = lolMatchesForDisplay.reduce(
+    (sum, m) => sum + m.assists,
+    0
+  );
 
   const avgKda =
     totalDeaths === 0
@@ -268,7 +342,7 @@ export default async function Home({ searchParams }: Props) {
 
               <StatCard
                 label="試合数"
-                value={matches.length}
+                value={lolMatchesForDisplay.length}
                 subText="最近20試合"
               />
             </section>
@@ -281,11 +355,11 @@ export default async function Home({ searchParams }: Props) {
               <h2 className="text-2xl font-bold">最近の試合</h2>
 
               <div className="mt-4 space-y-3">
-                {matchesWithVersion.map((match) => (
+                {lolMatchesForDisplay.map((match) => (
                   <MatchCard
                     key={match.id}
                     champion={match.champion}
-                    championJa={championMap[match.champion]}
+                    championJa={match.championJa}
                     win={match.win}
                     kills={match.kills}
                     deaths={match.deaths}
@@ -293,15 +367,7 @@ export default async function Home({ searchParams }: Props) {
                     gameMode={match.gameMode}
                     queueId={match.queueId}
                     playedAt={match.playedAt}
-                    itemIds={[
-                      match.item0 ?? 0,
-                      match.item1 ?? 0,
-                      match.item2 ?? 0,
-                      match.item3 ?? 0,
-                      match.item4 ?? 0,
-                      match.item5 ?? 0,
-                      match.item6 ?? 0,
-                    ]}
+                    itemIds={match.itemIds}
                     ddragonVersion={match.ddragonVersion}
                   />
                 ))}

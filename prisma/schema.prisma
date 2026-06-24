@@ -86,3 +86,136 @@ model TftChampion {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+model LolMatch {
+  matchId            String   @id
+  gameCreation       BigInt?
+  gameStartTimestamp BigInt?
+  gameEndTimestamp   BigInt?
+  gameDuration       Int?
+  gameVersion        String
+  patch              String
+  queueId            Int
+  gameMode           String
+  playedAt           DateTime
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  participants LolParticipant[]
+  teams        LolTeam[]
+}
+
+model LolParticipant {
+  id            String @id @default(cuid())
+  matchId       String
+  puuid         String
+  riotIdGameName String?
+  riotIdTagline  String?
+
+  participantId Int
+  teamId        Int
+  championId    Int
+  championName  String
+  teamPosition  String?
+  individualPosition String?
+  win           Boolean
+
+  kills  Int
+  deaths Int
+  assists Int
+
+  champLevel Int?
+  goldEarned Int?
+  totalMinionsKilled Int?
+  neutralMinionsKilled Int?
+  totalDamageDealtToChampions Int?
+  totalDamageTaken Int?
+  visionScore Int?
+  wardsPlaced Int?
+  wardsKilled Int?
+
+  summoner1Id Int?
+  summoner2Id Int?
+
+  item0 Int?
+  item1 Int?
+  item2 Int?
+  item3 Int?
+  item4 Int?
+  item5 Int?
+  item6 Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  match LolMatch @relation(fields: [matchId], references: [matchId], onDelete: Cascade)
+
+  @@unique([matchId, puuid])
+  @@index([puuid])
+  @@index([championName])
+  @@index([teamPosition])
+}
+
+model LolTeam {
+  id      String @id @default(cuid())
+  matchId String
+  teamId  Int
+  win     Boolean
+
+  baronKills Int?
+  dragonKills Int?
+  riftHeraldKills Int?
+  towerKills Int?
+  inhibitorKills Int?
+
+  firstBlood Boolean?
+  firstTower Boolean?
+  firstDragon Boolean?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  match LolMatch @relation(fields: [matchId], references: [matchId], onDelete: Cascade)
+
+  @@unique([matchId, teamId])
+}
+
+model LolChampion {
+  key       Int    @id // 例: 235
+  id        String // 例: Senna
+  nameJa    String
+  nameEn    String?
+  imageUrl  String
+  patch     String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([id])
+}
+
+model TftMatchParticipant {
+  id       String @id @default(cuid())
+  matchId  String
+  puuid    String
+
+  placement Int
+  level     Int
+  lastRound Int?
+  goldLeft  Int?
+  playersEliminated Int?
+  totalDamageToPlayers Int?
+
+  // 後から集計しやすいように、まずはJSONで丸めて保存する
+  augments Json
+  traits   Json
+  units    Json
+  companion Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([matchId, puuid])
+  @@index([puuid])
+  @@index([placement])
+}

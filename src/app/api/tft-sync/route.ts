@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { getAccount } from "@/lib/riot";
 import { getTftMatch, getTftMatchIds } from "@/lib/tft/match";
+import { saveTftMatchParticipants } from "@/lib/tft/saveTftMatchDetail";
 
 /**
  * TFTの最新試合を取得してDBへ保存するAPI
@@ -22,12 +23,17 @@ export async function GET(request: Request) {
       },
     });
 
-    // 保存済みなら何もしない
+    const match = await getTftMatch(matchId);
+
+    // TFT試合の全参加者データを保存する
+    // 既存のTftMatchは自分用表示、こちらは今後の統計分析用
+    await saveTftMatchParticipants(match);
+
+    // 自分用のTftMatchが保存済みなら、ここでスキップする
+    // ただし上で参加者データは保存済み
     if (exists) {
       continue;
     }
-
-    const match = await getTftMatch(matchId);
 
     /**
      * TFTのparticipantsには各プレイヤーの情報が入っている。
@@ -40,27 +46,6 @@ export async function GET(request: Request) {
     if (!me) {
       continue;
     }
-
-    /**
-     * オーグメントは文字列配列で返る。
-     * 例: ["TFT13_Augment_xxx", ...]
-     */
-    const augments = me.augments ?? [];
-
-    /**
-     * traitsは構成の特性情報。
-     * tier_current が 1以上のものだけ保存する。
-     */
-    const traits =
-      me.traits
-        ?.filter((trait: any) => trait.tier_current > 0)
-        .map((trait: any) => trait.name) ?? [];
-
-    /**
-     * unitsは盤面に出していたユニット情報。
-     * まずは character_id だけ保存する。
-     */
-    const units = me.units?.map((unit: any) => unit.character_id) ?? [];
 
     await prisma.tftMatch.create({
       data: {
