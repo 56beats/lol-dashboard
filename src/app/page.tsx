@@ -4,6 +4,7 @@ import { RankCard } from "@/components/dashboard/RankCard";
 import { RankChart } from "@/components/dashboard/RankChart";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { TftMatchCard } from "@/components/dashboard/TftMatchCard";
+import { getAccount } from "@/lib/riot";
 import { resolveDdragonVersion } from "@/lib/ddragon";
 import { prisma } from "@/lib/prisma";
 import { calculateRankScore, formatShortRankWithLp } from "@/lib/rank";
@@ -20,7 +21,10 @@ export default async function Home({ searchParams }: Props) {
   const params = await searchParams;
   const activeGame = params?.game === "tft" ? "tft" : "lol";
 
-  const myPuuid = process.env.RIOT_PUUID;
+  // Riot IDから現在のアカウント情報を取得する
+  // PUUIDを.envに持たず、取得結果を画面表示・絞り込みに使う
+  const account = await getAccount();
+  const myPuuid = account.puuid;
 
   /**
    * 新しいLoL試合保存構造から最近20試合を取得する
@@ -41,9 +45,7 @@ export default async function Home({ searchParams }: Props) {
     take: 20,
     include: {
       participants: {
-        where: {
-          puuid: myPuuid,
-        },
+        orderBy: [{ teamId: "asc" }, { participantId: "asc" }],
       },
     },
   });
@@ -67,7 +69,10 @@ export default async function Home({ searchParams }: Props) {
    */
   const lolMatchesForDisplay = await Promise.all(
     lolMatches.map(async (match) => {
-      const me = match.participants[0];
+      // participants 10人の中から自分のPUUIDと一致する参加者を取得する
+      const me = match.participants.find(
+        (participant) => participant.puuid === myPuuid
+      );
 
       if (!me) {
         return null;
@@ -96,6 +101,43 @@ export default async function Home({ searchParams }: Props) {
           me.item6 ?? 0,
         ],
         ddragonVersion: await resolveDdragonVersion(match.gameVersion),
+
+        // クリック展開時に表示する10人分の参加者情報
+        participants: match.participants.map((participant) => {
+          const participantChampion = lolChampionMap.get(
+            participant.championId
+          );
+
+          return {
+            puuid: participant.puuid,
+            isMe: participant.puuid === myPuuid,
+            riotIdGameName: participant.riotIdGameName,
+            riotIdTagline: participant.riotIdTagline,
+            teamId: participant.teamId,
+            championName: participant.championName,
+            championJa: participantChampion?.nameJa ?? participant.championName,
+            championImageUrl: participantChampion?.imageUrl,
+            kills: participant.kills,
+            deaths: participant.deaths,
+            assists: participant.assists,
+            totalMinionsKilled: participant.totalMinionsKilled,
+            neutralMinionsKilled: participant.neutralMinionsKilled,
+            totalDamageDealtToChampions:
+              participant.totalDamageDealtToChampions,
+            visionScore: participant.visionScore,
+            summoner1Id: participant.summoner1Id,
+            summoner2Id: participant.summoner2Id,
+            itemIds: [
+              participant.item0 ?? 0,
+              participant.item1 ?? 0,
+              participant.item2 ?? 0,
+              participant.item3 ?? 0,
+              participant.item4 ?? 0,
+              participant.item5 ?? 0,
+              participant.item6 ?? 0,
+            ],
+          };
+        }),
       };
     })
   ).then((matches) =>
@@ -369,6 +411,7 @@ export default async function Home({ searchParams }: Props) {
                     playedAt={match.playedAt}
                     itemIds={match.itemIds}
                     ddragonVersion={match.ddragonVersion}
+                    participants={match.participants}
                   />
                 ))}
               </div>
