@@ -4,7 +4,6 @@ import { RankCard } from "@/components/dashboard/RankCard";
 import { RankChart } from "@/components/dashboard/RankChart";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { TftMatchCard } from "@/components/dashboard/TftMatchCard";
-import { getAccount } from "@/lib/riot";
 import { resolveDdragonVersion } from "@/lib/ddragon";
 import { prisma } from "@/lib/prisma";
 import { calculateRankScore, formatShortRankWithLp } from "@/lib/rank";
@@ -23,8 +22,12 @@ export default async function Home({ searchParams }: Props) {
 
   // Riot IDから現在のアカウント情報を取得する
   // PUUIDを.envに持たず、取得結果を画面表示・絞り込みに使う
-  const account = await getAccount();
-  const myPuuid = account.puuid;
+  const appConfig = await prisma.appConfig.findUnique({
+    where: {
+      id: "default",
+    },
+  });
+  const myPuuid = appConfig?.puuid;
 
   /**
    * 新しいLoL試合保存構造から最近20試合を取得する
@@ -326,7 +329,11 @@ export default async function Home({ searchParams }: Props) {
       <div className="mx-auto max-w-6xl px-6 py-10">
         <section className="rounded-3xl border border-white/10 bg-white/5 p-8 shadow-2xl backdrop-blur">
           <div className="text-sm text-slate-400">Riot ID</div>
-          <h1 className="mt-2 text-4xl font-bold">56beats#3460</h1>
+          <h1 className="mt-2 text-4xl font-bold">
+            {appConfig
+              ? `${appConfig.riotGameName}#${appConfig.riotTagLine}`
+              : "Riot ID未同期"}
+          </h1>
           <p className="mt-3 text-sm text-slate-400">
             データはRiot Games APIから取得しています
           </p>
