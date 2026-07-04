@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { getAccount } from "@/lib/riot";
 import { prisma } from "@/lib/prisma";
 import { resolvePatch, toDate } from "@/lib/lol/match";
+import { getConfiguredPuuid, updateLastMatchSync } from "@/lib/sync/appConfig";
 
 const RIOT_API_KEY = process.env.RIOT_API_KEY;
 
@@ -291,10 +291,11 @@ async function saveMatchDetail(match: RiotMatchDetail) {
 
 export async function POST() {
   try {
-    // Riot IDからPUUIDを取得する
-    const account = await getAccount();
+    // AppConfigに保存済みのPUUIDを使う。
+    // Account APIはsync-profileだけで呼び出す方針。
+    const puuid = await getConfiguredPuuid();
 
-    const matchIds = await fetchMatchIds(account.puuid);
+    const matchIds = await fetchMatchIds(puuid);
 
     // まだDBに存在しない試合だけ保存する
     const existingMatches = await prisma.lolMatch.findMany({
@@ -320,6 +321,8 @@ export async function POST() {
       const detail = await fetchMatchDetail(matchId);
       await saveMatchDetail(detail);
     }
+
+    await updateLastMatchSync();
 
     return NextResponse.json({
       ok: true,

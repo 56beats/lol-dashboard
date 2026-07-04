@@ -9,6 +9,7 @@ export async function GET(request: NextRequest) {
   const baseUrl = request.nextUrl.origin;
 
   const jobs = [
+    `${baseUrl}/api/sync-profile`,
     `${baseUrl}/api/sync-lol-matches`,
     `${baseUrl}/api/sync-rank`,
     `${baseUrl}/api/tft-sync`,

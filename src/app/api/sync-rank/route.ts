@@ -1,15 +1,17 @@
 import { prisma } from "@/lib/prisma";
-import { getAccount, getLeagueEntriesByPuuid } from "@/lib/riot";
+import { getConfiguredPuuid, updateLastRankSync } from "@/lib/sync/appConfig";
+import { getLeagueEntriesByPuuid } from "@/lib/riot";
 
 /**
  * 現在のランク情報を取得してRankSnapshotに保存するAPI
  * 同じLP・同じランクなら保存しない
  */
 export async function GET(request: Request) {
-  const account = await getAccount();
-
+  // Account APIはsync-profileだけで呼ぶ。
+  // ランク同期ではDBに保存済みのPUUIDを使う。
+  const puuid = await getConfiguredPuuid();
   // PUUIDを使って現在のランク情報を取得する
-  const entries = await getLeagueEntriesByPuuid(account.puuid);
+  const entries = await getLeagueEntriesByPuuid(puuid);
 
   // まずはSolo/Duoだけ保存対象にする
   const soloQueue = entries.find(
@@ -51,7 +53,7 @@ export async function GET(request: Request) {
       },
     });
   }
-
+  await updateLastRankSync();
   // 同期後はトップページへ戻る
   return Response.redirect(new URL("/", request.url));
 }

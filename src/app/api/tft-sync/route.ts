@@ -1,5 +1,8 @@
 import { prisma } from "@/lib/prisma";
-import { getAccount } from "@/lib/riot";
+import {
+  getConfiguredPuuid,
+  updateLastTftMatchSync,
+} from "@/lib/sync/appConfig";
 import { getTftMatch, getTftMatchIds } from "@/lib/tft/match";
 import { saveTftMatchParticipants } from "@/lib/tft/saveTftMatchDetail";
 
@@ -10,9 +13,9 @@ import { saveTftMatchParticipants } from "@/lib/tft/saveTftMatchDetail";
  * これにより、プレイしていない期間に無駄なデータが増えない。
  */
 export async function GET(request: Request) {
-  const account = await getAccount();
+  const puuid = await getConfiguredPuuid();
 
-  const matchIds = await getTftMatchIds(account.puuid, 20);
+  const matchIds = await getTftMatchIds(puuid, 20);
 
   let saved = 0;
 
@@ -40,7 +43,7 @@ export async function GET(request: Request) {
      * その中から自分のPUUIDと一致するデータだけ取り出す。
      */
     const me = match.info.participants.find(
-      (participant: any) => participant.puuid === account.puuid
+      (participant: any) => participant.puuid === puuid
     );
 
     if (!me) {
@@ -82,5 +85,6 @@ export async function GET(request: Request) {
     saved++;
   }
 
+  await updateLastTftMatchSync();
   return Response.redirect(new URL("/", request.url));
 }
