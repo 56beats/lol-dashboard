@@ -1,5 +1,8 @@
 import { prisma } from "@/lib/prisma";
-import { getAccount } from "@/lib/riot";
+import {
+  getConfiguredPuuid,
+  updateLastTftRankSync,
+} from "@/lib/sync/appConfig";
 import { getTftLeagueEntriesByPuuid } from "@/lib/tft/rank";
 
 /**
@@ -9,9 +12,10 @@ import { getTftLeagueEntriesByPuuid } from "@/lib/tft/rank";
  * その中から通常のTFTランクを探して保存する。
  */
 export async function GET(request: Request) {
-  const account = await getAccount();
+  // TFT試合同期ではAccount APIを呼ばず、AppConfigのPUUIDを使う
+  const puuid = await getConfiguredPuuid();
 
-  const entries = await getTftLeagueEntriesByPuuid(account.puuid);
+  const entries = await getTftLeagueEntriesByPuuid(puuid);
 
   // TFT通常ランクを保存対象にする
   const rankedTft = entries.find(
@@ -53,5 +57,6 @@ export async function GET(request: Request) {
     });
   }
 
+  await updateLastTftRankSync();
   return Response.redirect(new URL("/", request.url));
 }

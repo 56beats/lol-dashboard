@@ -1,11 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolvePatch, toDate } from "@/lib/lol/match";
+import { getConfiguredPuuid, updateLastMatchSync } from "@/lib/sync/appConfig";
 
 const RIOT_API_KEY = process.env.RIOT_API_KEY;
-
-// あなたのPUUIDをenvに置く想定
-const PUUID = process.env.RIOT_PUUID;
 
 // JPサーバーの試合詳細はASIA routingを使う
 const RIOT_REGION = "asia";
@@ -112,14 +110,10 @@ async function riotFetch<T>(url: string): Promise<T> {
 /**
  * PUUIDから直近のmatchId一覧を取得する
  */
-async function fetchMatchIds() {
-  if (!PUUID) {
-    throw new Error("RIOT_PUUIDが設定されていません");
-  }
-
+async function fetchMatchIds(puuid: string) {
   const url =
     `https://${RIOT_REGION}.api.riotgames.com/lol/match/v5/matches/by-puuid/` +
-    `${PUUID}/ids?start=0&count=20`;
+    `${puuid}/ids?start=0&count=20`;
 
   return riotFetch<string[]>(url);
 }
@@ -297,7 +291,11 @@ async function saveMatchDetail(match: RiotMatchDetail) {
 
 export async function POST() {
   try {
-    const matchIds = await fetchMatchIds();
+    // AppConfigに保存済みのPUUIDを使う。
+    // Account APIはsync-profileだけで呼び出す方針。
+    const puuid = await getConfiguredPuuid();
+
+    const matchIds = await fetchMatchIds(puuid);
 
     // まだDBに存在しない試合だけ保存する
     const existingMatches = await prisma.lolMatch.findMany({
@@ -323,6 +321,8 @@ export async function POST() {
       const detail = await fetchMatchDetail(matchId);
       await saveMatchDetail(detail);
     }
+
+    await updateLastMatchSync();
 
     return NextResponse.json({
       ok: true,

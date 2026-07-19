@@ -219,3 +219,23 @@ model TftMatchParticipant {
   @@index([puuid])
   @@index([placement])
 }
+
+model AppConfig {
+  id String @id @default("default")
+
+  riotGameName String
+  riotTagLine  String
+  puuid        String?
+
+  profileIconId Int?
+  summonerLevel Int?
+
+  lastProfileSync DateTime?
+  lastMatchSync   DateTime?
+  lastRankSync    DateTime?
+  lastTftMatchSync DateTime?
+  lastTftRankSync  DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
