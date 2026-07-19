@@ -36,3 +36,13 @@ export function calcKda(kills: number, deaths: number, assists: number) {
 
   return ((kills + assists) / deaths).toFixed(2);
 }
+
+/**
+ * 数値を見やすく整形する
+ * 1000以上の場合は1k, 2.5kなどの表記にする
+ */
+export function formatNumber(value: number | null) {
+  if (value === null) return "-";
+  if (value >= 1000) return `${(value / 1000).toFixed(1)}k`;
+  return String(value);
+}

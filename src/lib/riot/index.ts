@@ -5,5 +5,4 @@
  */
 
 export * from "./account";
-export * from "./match";
 export * from "./rank";

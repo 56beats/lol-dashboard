@@ -1,33 +1,24 @@
 import type { RiotLeagueEntry } from "@/types/riot";
-import { LOL_API_BASE_URL, getRiotHeaders } from "./shared";
+import { LOL_API_BASE_URL, riotFetch } from "./shared";
 
 /**
  * PUUIDからランク情報を取得する
+ *
+ * 注: エラー時はコンソールにエラー詳細ログを出力
+ * （デバッグに必要なため、呼び出し側でのみ行う）
  */
 export async function getLeagueEntriesByPuuid(
   puuid: string
 ): Promise<RiotLeagueEntry[]> {
-  const response = await fetch(
-    `${LOL_API_BASE_URL}/lol/league/v4/entries/by-puuid/${encodeURIComponent(
-      puuid
-    )}`,
-    {
-      headers: getRiotHeaders(),
-      cache: "no-store",
-    }
-  );
+  const url = `${LOL_API_BASE_URL}/lol/league/v4/entries/by-puuid/${encodeURIComponent(
+    puuid
+  )}`;
 
-  if (!response.ok) {
-    const errorBody = await response.text();
-
-    console.error("League API Error", {
-      status: response.status,
-      body: errorBody,
-      puuid,
-    });
-
-    throw new Error(`Failed to fetch league entries: ${response.status}`);
+  try {
+    return await riotFetch<RiotLeagueEntry[]>(url);
+  } catch (error) {
+    // ドメイン固有のデバッグログ（呼び出し側で実施）
+    console.error("League API Error", { error, puuid });
+    throw error;
   }
-
-  return response.json();
 }

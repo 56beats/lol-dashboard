@@ -1,28 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-
-type RiotTftMatchDetail = {
-  metadata: {
-    match_id: string;
-  };
-  info: {
-    participants: RiotTftParticipant[];
-  };
-};
-
-type RiotTftParticipant = {
-  puuid: string;
-  placement: number;
-  level: number;
-  last_round?: number;
-  gold_left?: number;
-  players_eliminated?: number;
-  total_damage_to_players?: number;
-  augments?: string[];
-  traits?: unknown[];
-  units?: unknown[];
-  companion?: unknown;
-};
+import type { RiotTftMatchDetail } from "@/types/tft";
 
 /**
  * TFT試合詳細から全参加者分のデータを保存する

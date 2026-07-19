@@ -1,79 +1,13 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import {
-  fetchLatestDDragonVersion,
-  getCDragonChampionImageUrl,
-  getDDragonChampionImageUrl,
-} from "@/lib/tftChampionAssets";
+import { syncTftChampions } from "@/lib/sync/tft/champions";
 
-type DDragonTftChampion = {
-  id: string;
-  name: string;
-  tier?: number;
-  image: {
-    full: string;
-  };
-};
-
-type DDragonResponse = {
-  data: Record<string, DDragonTftChampion>;
-};
-
+/**
+ * TFT チャンピオン同期 API の入口
+ */
 export async function POST() {
   try {
-    const version = await fetchLatestDDragonVersion();
-
-    const res = await fetch(
-      `https://ddragon.leagueoflegends.com/cdn/${version}/data/ja_JP/tft-champion.json`,
-      {
-        // 毎回最新を取りたいのでキャッシュしない
-        cache: "no-store",
-      }
-    );
-
-    if (!res.ok) {
-      throw new Error("TFTチャンピオン一覧の取得に失敗しました");
-    }
-
-    const json = (await res.json()) as DDragonResponse;
-    // Set17のチャンピオンだけ登録する
-    const champions = Object.values(json.data).filter((champion) =>
-      champion.id.startsWith("TFT17_")
-    );
-
-    await Promise.all(
-      champions.map((champion) =>
-        prisma.tftChampion.upsert({
-          where: {
-            id: champion.id,
-          },
-          update: {
-            name: champion.name,
-            cost: champion.tier ?? null,
-            imageUrl: getCDragonChampionImageUrl(champion.id),
-            ddragonImageUrl: getDDragonChampionImageUrl(
-              version,
-              champion.image.full
-            ),
-          },
-          create: {
-            id: champion.id,
-            name: champion.name,
-            cost: champion.tier ?? null,
-            imageUrl: getCDragonChampionImageUrl(champion.id),
-            ddragonImageUrl: getDDragonChampionImageUrl(
-              version,
-              champion.image.full
-            ),
-          },
-        })
-      )
-    );
-
-    return NextResponse.json({
-      ok: true,
-      count: champions.length,
-    });
+    const result = await syncTftChampions();
+    return NextResponse.json(result);
   } catch (error) {
     console.error(error);
 

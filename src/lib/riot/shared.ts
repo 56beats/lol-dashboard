@@ -18,3 +18,26 @@ export function getRiotHeaders() {
     "X-Riot-Token": API_KEY,
   };
 }
+
+/**
+ * Riot API への低レベル通信を共通化
+ *
+ * 責務: fetch実行、ヘッダー付与、キャッシュ設定、ステータス確認、JSON変換
+ * 不含: URL構築、ドメイン固有処理、エラーカスタマイズ
+ *
+ * 使用例:
+ * const matchIds = await riotFetch<string[]>(url);
+ * const entry = await riotFetch<RiotLeagueEntry>(url);
+ */
+export async function riotFetch<T>(url: string): Promise<T> {
+  const response = await fetch(url, {
+    headers: getRiotHeaders(),
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error(`Riot API error: ${response.status}`);
+  }
+
+  return response.json();
+}

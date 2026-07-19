@@ -1,40 +1,20 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { getAccount } from "@/lib/riot";
+import { syncProfile } from "@/lib/sync/profile";
 
 /**
- * Riot IDからプロフィール情報を取得してDBへ保存するAPI
+ * プロフィール同期 API の入口
  *
- * 画面表示ではRiot APIを直接叩かず、
- * ここで保存したAppConfigを見るようにする。
+ * - POST: 同期を実行し、結果をJSONで返す
+ * - GET: 同期を実行し、トップページへリダイレクト
  */
 export async function POST() {
   try {
-    const account = await getAccount();
-
-    await prisma.appConfig.upsert({
-      where: {
-        id: "default",
-      },
-      update: {
-        riotGameName: account.gameName,
-        riotTagLine: account.tagLine,
-        puuid: account.puuid,
-        lastProfileSync: new Date(),
-      },
-      create: {
-        id: "default",
-        riotGameName: account.gameName,
-        riotTagLine: account.tagLine,
-        puuid: account.puuid,
-        lastProfileSync: new Date(),
-      },
-    });
+    const result = await syncProfile();
 
     return NextResponse.json({
       ok: true,
-      gameName: account.gameName,
-      tagLine: account.tagLine,
+      gameName: result.gameName,
+      tagLine: result.tagLine,
     });
   } catch (error) {
     console.error(error);
@@ -49,9 +29,6 @@ export async function POST() {
   }
 }
 
-/**
- * 手動実行しやすいようにGETでも同期できるようにする。
- */
 export async function GET(request: Request) {
   await POST();
 

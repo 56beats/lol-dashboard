@@ -1,4 +1,4 @@
-import { ACCOUNT_API_BASE_URL, getRiotHeaders } from "./shared";
+import { ACCOUNT_API_BASE_URL, riotFetch } from "./shared";
 
 /**
  * Riot IDからAccount情報を取得する
@@ -11,19 +11,9 @@ export async function getAccount() {
   const gameName = process.env.RIOT_GAME_NAME!;
   const tagLine = process.env.RIOT_TAG_LINE!;
 
-  const response = await fetch(
-    `${ACCOUNT_API_BASE_URL}/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(
-      gameName
-    )}/${encodeURIComponent(tagLine)}`,
-    {
-      headers: getRiotHeaders(),
-      cache: "no-store",
-    }
-  );
+  const url = `${ACCOUNT_API_BASE_URL}/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(
+    gameName
+  )}/${encodeURIComponent(tagLine)}`;
 
-  if (!response.ok) {
-    throw new Error(`Failed to fetch account: ${response.status}`);
-  }
-
-  return response.json();
+  return riotFetch<{ gameName: string; tagLine: string; puuid: string }>(url);
 }
