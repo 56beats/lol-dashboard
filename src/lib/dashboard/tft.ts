@@ -17,6 +17,7 @@ type TftDisplayTrait = TftTrait & {
 type TftDisplayUnit = TftUnit & {
   name: string;
   imageUrl?: string;
+  fallbackImageUrl?: string;
   items: TftDisplayItem[];
 };
 
@@ -62,7 +63,16 @@ export async function getTftMatchesForDisplay(): Promise<TftMatchForDisplay[]> {
     tftChampions.map((champion) => [champion.id, champion])
   );
 
-  const tftDisplayMaps = await getTftDisplayMaps();
+  // DDragon API取得失敗時は空マップで継続する
+  // 以降の各エンティティ変換にある既存フォールバック（?? 演算子）が内部IDを代替表示する
+  let tftDisplayMaps: Awaited<ReturnType<typeof getTftDisplayMaps>>;
+  try {
+    tftDisplayMaps = await getTftDisplayMaps();
+  } catch (error) {
+    // エラーを握りつぶさずサーバーログへ出力する（調査可能にするため）
+    console.error("[TFTダッシュボード] DDragon取得失敗（空マップで継続）:", error instanceof Error ? error.message : "Unknown");
+    tftDisplayMaps = { champions: {}, traits: {}, augments: {}, items: {} };
+  }
 
   return tftMatches.map((match) => ({
     id: match.id,
@@ -93,22 +103,34 @@ export async function getTftMatchesForDisplay(): Promise<TftMatchForDisplay[]> {
 
     // TFTユニット情報を画面表示用へ変換
     // DBにはIDのみ保存されているため、Data Dragonで名前・画像に変換
-    units: (match.units as TftUnit[]).map((unit) => ({
-      ...unit,
-      name:
-        tftChampionMap.get(unit.id)?.name ??
-        tftDisplayMaps.champions[unit.id]?.name ??
-        unit.id,
-      imageUrl:
-        tftChampionMap.get(unit.id)?.imageUrl ??
-        tftDisplayMaps.champions[unit.id]?.imageUrl,
-      items: unit.itemIds.map((itemId) => ({
-        ...(tftDisplayMaps.items[itemId] ?? {
-          id: itemId,
-          name: itemId,
-        }),
-      })),
-    })),
+    units: (match.units as TftUnit[]).map((unit) => {
+      const dbChampion = tftChampionMap.get(unit.id);
+      // CDragonを優先。DBになければDDragonマップを使う（既存ロジック維持）
+      const imageUrl =
+        dbChampion?.imageUrl ?? tftDisplayMaps.champions[unit.id]?.imageUrl;
+      // DBにチャンピオン情報がある場合のみ、CDragonが404になったときのDDragonフォールバックを設定する
+      // DBの ddragonImageUrl が優先。なければDDragonマップのURLを使う
+      const fallbackImageUrl =
+        dbChampion !== undefined
+          ? (dbChampion.ddragonImageUrl ?? tftDisplayMaps.champions[unit.id]?.imageUrl)
+          : undefined;
+
+      return {
+        ...unit,
+        name:
+          dbChampion?.name ??
+          tftDisplayMaps.champions[unit.id]?.name ??
+          unit.id,
+        imageUrl,
+        fallbackImageUrl: fallbackImageUrl ?? undefined,
+        items: unit.itemIds.map((itemId) => ({
+          ...(tftDisplayMaps.items[itemId] ?? {
+            id: itemId,
+            name: itemId,
+          }),
+        })),
+      };
+    }),
   }));
 }
 

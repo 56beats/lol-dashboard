@@ -64,6 +64,7 @@ export function TftMatchCardDetail({
                   <TftChampionIcon
                     name={unit.name}
                     imageUrl={unit.imageUrl}
+                    fallbackImageUrl={unit.fallbackImageUrl}
                     size={48}
                   />
                 ) : (

@@ -25,16 +25,18 @@ export async function fetchLatestDDragonVersion(): Promise<string> {
  * 例: championId="TFT17_Aatrox"
  * → https://raw.communitydragon.org/latest/game/assets/ux/tft/championsplashes/.../tft17_aatrox_teamplanner_splash.tft_set17.png
  *
- * @throws Error セット番号が取得できない場合
+ * セット番号が取得できない場合は undefined を返す。
+ * Step 2 の isStandardTftChampionId フィルタを通過したIDであれば通常は到達しない。
  */
-export function getCDragonChampionImageUrl(championId: string): string {
+export function getCDragonChampionImageUrl(championId: string): string | undefined {
   const lowerId = championId.toLowerCase();
 
   // TFT17_Aatrox → 17
   const setNumber = championId.match(/^TFT(\d+)_/)?.[1];
 
   if (!setNumber) {
-    throw new Error(`セット番号を取得できませんでした: ${championId}`);
+    // Step 2のフィルタで通常は到達しない。万一の場合は undefined で継続する
+    return undefined;
   }
 
   return [

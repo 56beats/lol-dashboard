@@ -36,6 +36,8 @@ export type TftDisplayItem = {
 export type TftDisplayUnit = TftUnit & {
   name: string;
   imageUrl?: string;
+  // CDragonが404の場合にコンポーネント側でDDragonへ切り替えるためのURL
+  fallbackImageUrl?: string;
   sprite?: TftSprite;
   items: TftDisplayItem[];
 };
