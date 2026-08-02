@@ -10,7 +10,11 @@ import {
   getLolMatchesForDisplay,
   calculateLolStats,
 } from "@/lib/dashboard/lol";
-import { getLolRankChartData, getLolRankHistory, calculateLolRankLpDiff } from "@/lib/dashboard/rank";
+import {
+  getLolRankChartData,
+  getLolRankHistory,
+  calculateLolRankLpDiff,
+} from "@/lib/dashboard/rank";
 import {
   getTftMatchesForDisplay,
   calculateTftStats,
@@ -51,7 +55,13 @@ export default async function Home({ searchParams }: Props) {
 
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,#1e3a8a_0,#020617_45%,#020617_100%)] text-white">
-      <DashboardHeader />
+      <DashboardHeader
+        activeGame={activeGame}
+        lastLolMatchSync={appConfig?.lastMatchSync}
+        lastLolRankSync={appConfig?.lastRankSync}
+        lastTftMatchSync={appConfig?.lastTftMatchSync}
+        lastTftRankSync={appConfig?.lastTftRankSync}
+      />
 
       <div className="mx-auto max-w-6xl px-6 py-10">
         <section className="rounded-3xl border border-white/10 bg-white/5 p-8 shadow-2xl backdrop-blur">
