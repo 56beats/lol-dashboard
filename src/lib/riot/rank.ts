@@ -15,7 +15,7 @@ export async function getLeagueEntriesByPuuid(
   )}`;
 
   try {
-    return await riotFetch<RiotLeagueEntry[]>(url);
+    return await riotFetch<RiotLeagueEntry[]>(url, "lol");
   } catch (error) {
     // ドメイン固有のデバッグログ（呼び出し側で実施）
     console.error("League API Error", { error, puuid });

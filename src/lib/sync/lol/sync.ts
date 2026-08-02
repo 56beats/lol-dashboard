@@ -15,7 +15,7 @@ async function fetchMatchIds(puuid: string) {
     `https://${RIOT_REGION}.api.riotgames.com/lol/match/v5/matches/by-puuid/` +
     `${puuid}/ids?start=0&count=20`;
 
-  return riotFetch<string[]>(url);
+  return riotFetch<string[]>(url, "lol");
 }
 
 /**
@@ -24,7 +24,7 @@ async function fetchMatchIds(puuid: string) {
 async function fetchMatchDetail(matchId: string) {
   const url = `https://${RIOT_REGION}.api.riotgames.com/lol/match/v5/matches/${matchId}`;
 
-  return riotFetch<RiotMatchDetail>(url);
+  return riotFetch<RiotMatchDetail>(url, "lol");
 }
 
 /**

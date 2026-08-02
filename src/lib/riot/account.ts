@@ -15,5 +15,8 @@ export async function getAccount() {
     gameName
   )}/${encodeURIComponent(tagLine)}`;
 
-  return riotFetch<{ gameName: string; tagLine: string; puuid: string }>(url);
+  return riotFetch<{ gameName: string; tagLine: string; puuid: string }>(
+    url,
+    "lol"
+  );
 }

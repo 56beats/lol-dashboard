@@ -1,12 +1,12 @@
-/**
- * TFT特性の発動段階ごとの見た目を返す
+﻿/**
+ * TFT迚ｹ諤ｧ縺ｮ逋ｺ蜍墓ｮｵ髫弱＃縺ｨ縺ｮ隕九◆逶ｮ繧定ｿ斐☆
  *
  * style:
- * 0 = 未発動
- * 1 = ブロンズ
- * 2 = シルバー
- * 3 = ゴールド
- * 4 = プリズム
+ * 0 = 譛ｪ逋ｺ蜍・
+ * 1 = 繝悶Ο繝ｳ繧ｺ
+ * 2 = 繧ｷ繝ｫ繝舌・
+ * 3 = 繧ｴ繝ｼ繝ｫ繝・
+ * 4 = 繝励Μ繧ｺ繝
  */
 export function getTraitBadgeClass(style?: number) {
   switch (style) {
@@ -26,3 +26,4 @@ export function getTraitBadgeClass(style?: number) {
       return "border-white/10 bg-white/10 text-slate-300";
   }
 }
+

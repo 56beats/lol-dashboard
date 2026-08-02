@@ -1,25 +1,28 @@
 /**
  * Riot API共通設定
  *
- * APIキーやベースURLを1箇所にまとめておくと、
- * 後からTFT対応や地域変更をするときに修正箇所が少なくなる。
+ * LoL用とTFT用でProduct Keyを分離し、
+ * 呼び出し側がどちらのゲームAPIを利用するか明示する。
  */
-
-export const API_KEY = process.env.RIOT_API_KEY!;
 
 export const ACCOUNT_API_BASE_URL = "https://asia.api.riotgames.com";
 export const LOL_API_BASE_URL = "https://jp1.api.riotgames.com";
 
 /**
+ * Riot APIで使用するゲーム種別
+ */
+export type RiotGame = "lol" | "tft";
+
+/**
  * Riot API HTTPエラーを表す独自エラー型
  *
- * 汎用 Error と区別することで、呼び出し元が 401/429 などを判別できる。
- * extends Error のため、既存の catch(error) や instanceof Error は引き続き動作する。
+ * 汎用Errorと区別することで、
+ * 呼び出し元が401・403・429などを判別できる。
  */
 export class RiotApiError extends Error {
   constructor(
     public readonly status: number,
-    message = `Riot API request failed: ${status}`,
+    message = `Riot API request failed: ${status}`
   ) {
     super(message);
     this.name = "RiotApiError";
@@ -27,51 +30,99 @@ export class RiotApiError extends Error {
 }
 
 /**
- * RiotApiError のステータスに応じたHTTPレスポンスコードへ変換する
- *
- * Riot API側のエラーは 502（Bad Gateway）として返す。
- * 通信自体の失敗（TypeError）は 503（Service Unavailable）として返す。
+ * RiotApiErrorをAPIレスポンス用のHTTPステータスへ変換する
  */
 export function riotErrorToHttpStatus(error: unknown): number {
   if (error instanceof RiotApiError) {
-    const s = error.status;
-    if (s === 401) return 401;
-    if (s === 403) return 403;
-    if (s === 429) return 429;
-    if (s >= 500) return 502;
+    if (error.status === 401) {
+      return 401;
+    }
+
+    if (error.status === 403) {
+      return 403;
+    }
+
+    if (error.status === 429) {
+      return 429;
+    }
+
+    /*
+     * Riot API側の5xxエラーは、
+     * アプリから見た外部サービス障害として502を返す。
+     */
+    if (error.status >= 500) {
+      return 502;
+    }
+
+    /*
+     * Riot APIから返されたその他の4xxも、
+     * アプリ内部の500ではなく外部API由来として扱う。
+     */
     return 502;
   }
-  // fetch 通信失敗（ネットワーク切断・DNS解決失敗など）は TypeError
-  if (error instanceof TypeError) return 503;
-  // Prismaエラー・その他の内部エラー
+
+  /*
+   * fetchの通信失敗やDNS解決失敗などは、
+   * 通常TypeErrorとしてthrowされる。
+   */
+  if (error instanceof TypeError) {
+    return 503;
+  }
+
+  // Prismaエラーや予期しない内部エラー
   return 500;
+}
+
+/**
+ * ゲームごとのRiot APIキーを取得する
+ *
+ * モジュール読込時ではなく、リクエスト実行時に取得することで、
+ * Vercelやローカル環境での設定漏れを検出しやすくする。
+ */
+function getRiotApiKey(game: RiotGame): string {
+  const apiKey =
+    game === "lol"
+      ? process.env.RIOT_API_KEY_LOL
+      : process.env.RIOT_API_KEY_TFT;
+
+  if (!apiKey) {
+    throw new Error(`Riot API key is not configured for ${game}.`);
+  }
+
+  return apiKey;
 }
 
 /**
  * Riot APIへ渡す共通ヘッダー
  */
-export function getRiotHeaders() {
+function getRiotHeaders(game: RiotGame): HeadersInit {
   return {
-    "X-Riot-Token": API_KEY,
+    "X-Riot-Token": getRiotApiKey(game),
   };
 }
 
 /**
- * Riot API への低レベル通信を共通化
+ * Riot APIへの低レベル通信を共通化する
  *
- * 責務: fetch実行、ヘッダー付与、キャッシュ設定、ステータス確認、JSON変換
- * 不含: URL構築、ドメイン固有処理、エラーカスタマイズ
+ * 責務:
+ * - APIキーの付与
+ * - fetch実行
+ * - キャッシュ無効化
+ * - HTTPステータス確認
+ * - JSON変換
  *
- * HTTPエラー時は RiotApiError をthrowする。
- * 通信自体の失敗（ネットワークエラー）は TypeError のまま伝播する。
+ * URL構築やLoL・TFT固有のデータ処理は呼び出し側で行う。
+ *
+ * HTTPエラー時はRiotApiErrorをthrowする。
+ * 通信自体の失敗はTypeErrorのまま呼び出し側へ伝播する。
  *
  * 使用例:
- * const matchIds = await riotFetch<string[]>(url);
- * const entry = await riotFetch<RiotLeagueEntry>(url);
+ * const matchIds = await riotFetch<string[]>(url, "lol");
+ * const tftMatch = await riotFetch<RiotTftMatch>(url, "tft");
  */
-export async function riotFetch<T>(url: string): Promise<T> {
+export async function riotFetch<T>(url: string, game: RiotGame): Promise<T> {
   const response = await fetch(url, {
-    headers: getRiotHeaders(),
+    headers: getRiotHeaders(game),
     cache: "no-store",
   });
 
@@ -79,5 +130,5 @@ export async function riotFetch<T>(url: string): Promise<T> {
     throw new RiotApiError(response.status);
   }
 
-  return response.json();
+  return response.json() as Promise<T>;
 }
