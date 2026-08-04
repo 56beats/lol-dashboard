@@ -1,469 +1,252 @@
-# lol-dashboard
+# LoL Dashboard
 
-自分専用の LoL / TFT 戦績ダッシュボードです。
+自分専用の **League of Legends / Teamfight Tactics 戦績ダッシュボード**です。
 
-Riot Games API から試合・ランク情報を取得し、Neon PostgreSQL に保存して表示します。
+Riot Games APIから取得した試合・ランク情報をデータベースへ保存し、Webアプリ・PWA・Windowsアプリとして閲覧できます。
 
 ---
 
-# 機能
+## ✨ Features
 
-## League of Legends
+### League of Legends
 
+- 最近20試合の表示
+- KDA・勝敗表示
+- アイテム表示
+- 味方・敵プレイヤー一覧
+- ランク情報表示
+- LP推移グラフ
+- 勝率・平均KDAなどの統計
+
+### Teamfight Tactics
+
+- 最近20試合表示
+- 順位表示
+- Trait表示
+- Champion表示
+- Augment表示
 - ランク表示
 - LP推移グラフ
-- 最近20試合表示
-- 試合詳細
-  - 敵味方10人表示
-  - KDA
-  - アイテム
-  - サモナースペル
-  - CS
-  - Vision Score
-  - ダメージバー
-- CommunityDragon画像対応（予定）
+- Top4率・平均順位
+
+### Synchronization
+
+- Riot APIとの手動同期
+- Vercel Cronによる毎日自動同期
+- LoL / TFTを個別同期
+- Product Key対応
+- エラーハンドリング
+
+### Application
+
+- PWA対応
+- Windowsアプリとしてインストール可能
+- レスポンシブ対応
+- ダークテーマ
 
 ---
 
-## Teamfight Tactics
+# Screenshots
 
-- ランク表示
-- ランク推移グラフ
-- 最近20試合表示
-- Trait表示
-- Traitアイコン
-- Champion画像
-- アイテム表示
-- オーグメント表示
-- CommunityDragon画像対応
+> （スクリーンショットを追加予定）
 
 ---
 
-# 使用技術
+# Tech Stack
 
-| 項目      | 内容                         |
-| --------- | ---------------------------- |
-| Framework | Next.js                      |
-| Language  | TypeScript                   |
-| UI        | Tailwind CSS                 |
-| Database  | Neon PostgreSQL              |
-| ORM       | Prisma                       |
-| Hosting   | Vercel                       |
-| Game API  | Riot Games API               |
-| Image     | CommunityDragon / DataDragon |
+## Frontend
+
+- Next.js 16
+- React 19
+- TypeScript
+- Tailwind CSS
+
+## Backend
+
+- Next.js Route Handlers
+- Prisma ORM
+
+## Database
+
+- Neon PostgreSQL
+
+## Hosting
+
+- Vercel
+
+## External APIs
+
+- Riot Games API
+- CommunityDragon
+- Data Dragon
 
 ---
 
-# セットアップ
+# Architecture
 
-## 1. Clone
+```
+Browser
+        │
+        ▼
+ Next.js (Vercel)
+        │
+        ├── Riot Games API
+        │
+        ├── CommunityDragon
+        │
+        ├── Data Dragon
+        │
+        ▼
+ Neon PostgreSQL
+```
 
-```bash
-git clone <repository-url>
+画面表示はデータベースのみを参照し、Riot APIへ直接アクセスしません。
 
-cd lol-dashboard
+同期時のみRiot APIを利用します。
+
+---
+
+# Project Structure
+
+```
+src
+├── app
+│   ├── api
+│   └── page.tsx
+│
+├── components
+│   └── dashboard
+│
+├── lib
+│   ├── dashboard
+│   ├── ddragon
+│   ├── riot
+│   └── sync
+│
+├── types
+│
+└── prisma
 ```
 
 ---
 
-## 2. パッケージインストール
+# Environment Variables
 
-```bash
-npm install
 ```
-
----
-
-## 3. Vercel CLI
-
-```bash
-npm install -g vercel
-```
-
-確認
-
-```bash
-vercel --version
-```
-
----
-
-## 4. Vercelログイン
-
-```bash
-vercel login
-```
-
----
-
-## 5. プロジェクトをリンク
-
-```bash
-vercel link
-```
-
-既存のプロジェクトを選択してください。
-
----
-
-## 6. 環境変数取得
-
-```bash
-vercel env pull .env.local
-```
-
-Prisma CLIは `.env` を使用するためコピーします。
-
-Windows
-
-```powershell
-copy .env.local .env
-```
-
-Mac/Linux
-
-```bash
-cp .env.local .env
-```
-
----
-
-# 環境変数
-
-`.env.example`
-
-```env
 DATABASE_URL=
 
-POSTGRES_URL_NON_POOLING=
-
-RIOT_API_KEY=
-
 RIOT_GAME_NAME=
-
 RIOT_TAG_LINE=
+
+RIOT_API_KEY_LOL=
+RIOT_API_KEY_TFT=
 
 CRON_SECRET=
 ```
 
-## 補足
-
-現在は
-
-```
-RIOT_PUUID
-```
-
-は使用していません。
-
-起動時に
-
-```
-RIOT_GAME_NAME
-RIOT_TAG_LINE
-```
-
-から取得しています。
-
 ---
 
-# Prisma
+# Setup
 
-Client生成
-
-```bash
-npx prisma generate
-```
-
-Migration
-
-```bash
-npx prisma migrate dev
-```
-
-Studio
-
-```bash
-npx prisma studio
-```
-
----
-
-# 開発サーバー
-
-```bash
-npm run dev
-```
-
-```
-http://localhost:3000
-```
-
----
-
-# Build
-
-```bash
-npm run build
-```
-
----
-
-# API
-
-## LoL
-
-### 試合同期
-
-```
-GET /api/sync-lol-matches
-```
-
-### LP同期
-
-```
-GET /api/sync-rank
-```
-
-### Champion同期
-
-```
-POST /api/sync-lol-champions
-```
-
----
-
-## TFT
-
-### 試合同期
-
-```
-GET /api/tft-sync
-```
-
-### LP同期
-
-```
-GET /api/tft-sync-rank
-```
-
-### Champion同期
-
-```
-POST /api/sync-tft-champions
-```
-
----
-
-## Cron
-
-```
-GET /api/cron/sync
-```
-
-現在は
-
-- LoL試合同期
-- LoLランク同期
-- TFT試合同期
-- TFTランク同期
-
-を実行します。
-
----
-
-# DB構成
-
-## LoL
-
-```
-LolMatch
-    │
-    ├──── LolParticipant
-    │
-    └──── LolTeam
-
-LolChampion
-```
-
----
-
-## TFT
-
-```
-TftMatch
-      │
-      └──── TftMatchParticipant
-
-TftChampion
-```
-
----
-
-# 新しいPCで開発する手順
-
-```bash
-git clone <repository>
-
-cd lol-dashboard
-
-npm install
-
-npm install -g vercel
-
-vercel login
-
-vercel link
-
-vercel env pull .env.local
-
-copy .env.local .env
-
-npx prisma generate
-
-npm run dev
-```
-
----
-
-# よく使うコマンド
-
-依存更新
+Install packages
 
 ```bash
 npm install
 ```
 
-Client生成
+Generate Prisma Client
 
 ```bash
 npx prisma generate
 ```
 
-Migration
+Run development server
 
 ```bash
-npx prisma migrate dev
-```
-
-DB確認
-
-```bash
-npx prisma studio
-```
-
-Build
-
-```bash
-npm run build
+npm run dev
 ```
 
 ---
 
-# トラブルシューティング
+# Synchronization
 
-## prisma が見つからない
+## Manual
 
-```
-prisma is not recognized...
-```
-
-↓
-
-```bash
-npx prisma generate
-```
-
----
-
-## Neonへ接続できない
+LoL
 
 ```
-P1001
+/api/sync-profile
+/api/sync-lol-matches
+/api/sync-rank
 ```
 
-確認すること
-
-- Neonが起動しているか
-- DATABASE_URL
-- POSTGRES_URL_NON_POOLING
-- ネットワーク
-
----
-
-## Riot API 401
-
-Developer Key切れです。
-
-Portalから新しいKeyを取得してください。
-
----
-
-## Riot API 404
-
-GameName / TagLine を確認してください。
+TFT
 
 ```
-RIOT_GAME_NAME
-RIOT_TAG_LINE
+/api/tft-sync
+/api/tft-sync-rank
 ```
 
 ---
 
-# 開発ルール
+## Automatic
 
-- 日本語コメントを積極的に入れる
-- CommunityDragonを優先利用
-- Champion情報はDBに保持する
-- Riot APIは必要最低限だけ叩く
-- 表示はDBから行う
+Vercel Cron
 
----
+```
+0 19 * * *
+```
 
-# 今後の予定
-
-## 優先度 高
-
-- [ ] 旧 Match テーブル廃止
-- [ ] 旧 sync API廃止
-- [ ] Cron整理
-- [ ] README更新
+毎日 JST 04:00 に自動同期します。
 
 ---
 
-## 優先度 中
+# Design Principles
 
-- [ ] Windows(Tauri)アプリ
-- [ ] 自動同期
-- [ ] 試合ごとのLP増減
-- [ ] パッチフィルター
-- [ ] シーズンフィルター
-
----
-
-## 優先度 低
-
-- [ ] チャンピオン統計
-- [ ] パッチ別勝率
-- [ ] TFT Trait統計
-- [ ] TFT Champion統計
-- [ ] 使用アイテム統計
+- Riot APIへのアクセスは同期時のみ
+- 画面はDBのみ参照
+- LoLとTFTを責務ごとに分離
+- ビジネスロジックは `src/lib` に集約
+- Route HandlerはHTTPエントリーポイントのみ
+- 型安全性を重視
+- 共通処理は最小限に集約
 
 ---
 
-# 将来構想
+# Roadmap
 
-## Web
+## v1.0
 
-- iPhoneから確認
+- [x] LoL戦績表示
+- [x] TFT戦績表示
+- [x] ランク履歴
+- [x] LPグラフ
+- [x] Riot API同期
+- [x] 自動同期(Cron)
+- [x] PWA対応
+- [x] Windowsアプリ対応
 
-## Windows App
+## v1.1
 
-- LoLプレイ中だけ起動
-- 自動同期
-- タスクトレイ常駐
-- 通知
+- [ ] チャンピオン別統計
+- [ ] TFT構成統計
+- [ ] 検索機能
+- [ ] フィルター
 
-## 長期目標
+## v1.2
 
-OP.GGライクな自分専用ダッシュボードを完成させる。
+- [ ] シーズン切替
+- [ ] パッチ切替
+- [ ] Champion Analytics
+
+---
+
+# License
+
+MIT
+
+---
+
+# Author
+
+Sanshiro Nishikawa
