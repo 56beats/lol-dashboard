@@ -7,11 +7,18 @@ import { StatCard } from "@/components/dashboard/StatCard";
 import { TftMatchCard } from "@/components/dashboard/TftMatchCard";
 import { ChampionStats } from "@/components/dashboard/ChampionStats";
 import { PatchStats } from "@/components/dashboard/PatchStats";
+import { PatchComparison } from "@/components/dashboard/PatchComparison";
 import { RoleStats } from "@/components/dashboard/RoleStats";
 import { LolPeriodFilter } from "@/components/dashboard/LolPeriodFilter";
+import { TftTraitStats } from "@/components/dashboard/TftTraitStats";
+import { TftUnitStats } from "@/components/dashboard/TftUnitStats";
+import { TftAugmentStats } from "@/components/dashboard/TftAugmentStats";
+import { TftPatchStats } from "@/components/dashboard/TftPatchStats";
+import { TftPatchComparison } from "@/components/dashboard/TftPatchComparison";
 import { prisma } from "@/lib/prisma";
 import {
   calculateLolChampionStats,
+  calculateLolPatchComparison,
   calculateLolPatchStats,
   calculateLolRoleStats,
   calculateLolStats,
@@ -27,6 +34,12 @@ import {
 import {
   getTftMatchesForDisplay,
   calculateTftStats,
+  calculateTftTraitStats,
+  calculateTftUnitStats,
+  calculateTftAugmentStats,
+  calculateTftPatchStats,
+  calculateTftPatchComparison,
+  getTftPeriodLabel,
   getTftRankChartData,
   getLatestTftRank,
 } from "@/lib/dashboard/tft";
@@ -55,12 +68,18 @@ export default async function Home({ searchParams }: Props) {
   const championStats = calculateLolChampionStats(lolMatchesForDisplay);
   const roleStats = calculateLolRoleStats(lolMatchesForDisplay);
   const patchStats = calculateLolPatchStats(lolMatchesForDisplay);
+  const patchComparison = calculateLolPatchComparison(lolMatchesForDisplay);
   const { latestRank, history } = await getLolRankHistory(period);
   const lpDiff = calculateLolRankLpDiffForPeriod(history);
   const rankChartData = await getLolRankChartData();
 
-  const tftMatchesForDisplay = await getTftMatchesForDisplay();
+  const tftMatchesForDisplay = await getTftMatchesForDisplay(period);
   const tftStats = calculateTftStats(tftMatchesForDisplay);
+  const tftTraitStats = calculateTftTraitStats(tftMatchesForDisplay);
+  const tftUnitStats = calculateTftUnitStats(tftMatchesForDisplay);
+  const tftAugmentStats = calculateTftAugmentStats(tftMatchesForDisplay);
+  const tftPatchStats = calculateTftPatchStats(tftMatchesForDisplay);
+  const tftPatchComparison = calculateTftPatchComparison(tftMatchesForDisplay);
   const latestTftRank = await getLatestTftRank();
   const tftRankChartData = await getTftRankChartData();
 
@@ -152,6 +171,10 @@ export default async function Home({ searchParams }: Props) {
 
             <section className="mt-6 grid gap-4 lg:grid-cols-2">
               <PatchStats stats={patchStats} />
+              <PatchComparison comparison={patchComparison} />
+            </section>
+
+            <section className="mt-6 grid gap-4 lg:grid-cols-2">
               <div className="border-border bg-surface rounded-2xl border p-5 shadow-lg backdrop-blur">
                 <div className="text-muted mb-3 text-sm">分析対象期間</div>
                 <div className="text-foreground text-lg font-bold">
@@ -193,6 +216,13 @@ export default async function Home({ searchParams }: Props) {
           </>
         ) : (
           <>
+            <section className="mt-6 flex flex-wrap items-center justify-between gap-3">
+              <div className="text-muted text-sm">
+                対象期間: {getTftPeriodLabel(period)}
+              </div>
+              <LolPeriodFilter activePeriod={period} />
+            </section>
+
             <section className="mt-6 grid gap-4 md:grid-cols-4">
               <RankCard
                 tier={latestTftRank?.tier}
@@ -217,8 +247,22 @@ export default async function Home({ searchParams }: Props) {
               <StatCard
                 label="試合数"
                 value={tftMatchesForDisplay.length}
-                subText="最近20試合"
+                subText={getTftPeriodLabel(period)}
               />
+            </section>
+
+            <section className="mt-6 grid gap-4 lg:grid-cols-2">
+              <TftTraitStats stats={tftTraitStats} />
+              <TftUnitStats stats={tftUnitStats} />
+            </section>
+
+            <section className="mt-6 grid gap-4 lg:grid-cols-2">
+              <TftAugmentStats stats={tftAugmentStats} />
+              <TftPatchStats stats={tftPatchStats} />
+            </section>
+
+            <section className="mt-6">
+              <TftPatchComparison comparison={tftPatchComparison} />
             </section>
 
             <section className="mt-6">

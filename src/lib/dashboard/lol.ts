@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { resolveDdragonVersion } from "@/lib/ddragon/shared";
+import { comparePatchVersions } from "@/lib/dashboard/patch";
 
 export type LolPeriod = "recent20" | "7d" | "30d" | "all";
 
@@ -89,6 +90,25 @@ export type PatchStat = {
   avgKda: string;
 };
 
+export type PatchComparisonStat = {
+  patch: string;
+  games: number;
+  winRate: number;
+  avgKda: string;
+  avgKills: number;
+  avgDeaths: number;
+  avgAssists: number;
+  avgCs: number;
+  avgDamage: number;
+  avgVisionScore: number;
+};
+
+export type PatchComparison = {
+  latest: PatchComparisonStat | null;
+  previous: PatchComparisonStat | null;
+  message?: string;
+};
+
 function normalizeLolPeriod(period?: string): LolPeriod {
   if (period === "7d" || period === "30d" || period === "all") {
     return period;
@@ -163,29 +183,6 @@ function getRoleKey(
   }
 
   return null;
-}
-
-function comparePatchVersions(a: string, b: string): number {
-  if (a === b) {
-    return 0;
-  }
-
-  if (a === "Unknown") {
-    return 1;
-  }
-
-  if (b === "Unknown") {
-    return -1;
-  }
-
-  const [aMajor = 0, aMinor = 0] = a.split(".").map(Number);
-  const [bMajor = 0, bMinor = 0] = b.split(".").map(Number);
-
-  if (aMajor !== bMajor) {
-    return bMajor - aMajor;
-  }
-
-  return bMinor - aMinor;
 }
 
 export function getLolPeriodLabel(period: LolPeriod): string {
@@ -547,4 +544,68 @@ export function calculateLolPatchStats(
     })
     .sort((a, b) => comparePatchVersions(a.patch, b.patch))
     .slice(0, 5);
+}
+
+export function calculateLolPatchComparison(
+  matches: LolMatchForDisplay[]
+): PatchComparison {
+  const patchStats = calculateLolPatchStats(matches);
+  const sortedPatches = [...patchStats].sort((a, b) =>
+    comparePatchVersions(a.patch, b.patch)
+  );
+
+  const latestPatch = sortedPatches[0]?.patch ?? null;
+  const previousPatch = sortedPatches[1]?.patch ?? null;
+
+  if (!latestPatch || !previousPatch) {
+    return {
+      latest: null,
+      previous: null,
+      message: "比較できる前パッチのデータがありません",
+    };
+  }
+
+  const latestMatches = matches.filter(
+    (match) => (match.patch?.trim() || "Unknown") === latestPatch
+  );
+  const previousMatches = matches.filter(
+    (match) => (match.patch?.trim() || "Unknown") === previousPatch
+  );
+
+  const buildComparisonStat = (
+    patch: string,
+    patchMatches: LolMatchForDisplay[]
+  ): PatchComparisonStat => {
+    const games = patchMatches.length;
+    const totalKills = patchMatches.reduce((sum, match) => sum + match.kills, 0);
+    const totalDeaths = patchMatches.reduce((sum, match) => sum + match.deaths, 0);
+    const totalAssists = patchMatches.reduce((sum, match) => sum + match.assists, 0);
+    const totalCs = patchMatches.reduce((sum, match) => sum + match.cs, 0);
+    const totalDamage = patchMatches.reduce((sum, match) => sum + match.damage, 0);
+    const totalVisionScore = patchMatches.reduce(
+      (sum, match) => sum + match.visionScore,
+      0
+    );
+
+    return {
+      patch,
+      games,
+      winRate: games > 0 ? Math.round((patchMatches.filter((match) => match.win).length / games) * 100) : 0,
+      avgKda:
+        totalDeaths === 0
+          ? "Perfect"
+          : ((totalKills + totalAssists) / totalDeaths).toFixed(2),
+      avgKills: formatAverage(totalKills / games, 1),
+      avgDeaths: formatAverage(totalDeaths / games, 1),
+      avgAssists: formatAverage(totalAssists / games, 1),
+      avgCs: formatAverage(totalCs / games, 1),
+      avgDamage: formatAverage(totalDamage / games, 0),
+      avgVisionScore: formatAverage(totalVisionScore / games, 1),
+    };
+  };
+
+  return {
+    latest: buildComparisonStat(latestPatch, latestMatches),
+    previous: buildComparisonStat(previousPatch, previousMatches),
+  };
 }
