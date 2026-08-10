@@ -45,11 +45,20 @@ model RankSnapshot {
   wins      Int
   losses    Int
 
+  riotAccountId String?
+  riotAccount   RiotAccount? @relation(fields: [riotAccountId], references: [id], onDelete: Restrict)
+
   createdAt DateTime @default(now())
+
+  @@index([riotAccountId])
 }
 
 model TftMatch {
-  id        String   @id
+  id        String   @id @default(cuid())
+  matchId   String
+
+  riotAccountId String?
+  riotAccount   RiotAccount? @relation(fields: [riotAccountId], references: [id], onDelete: Restrict)
 
   placement Int
   level     Int
@@ -60,6 +69,10 @@ model TftMatch {
 
   playedAt  DateTime
   createdAt DateTime @default(now())
+
+  @@unique([riotAccountId, matchId])
+  @@index([riotAccountId])
+  @@index([matchId])
 }
 
 model TftRankSnapshot {
@@ -74,7 +87,12 @@ model TftRankSnapshot {
   wins      Int
   losses    Int
 
+  riotAccountId String?
+  riotAccount   RiotAccount? @relation(fields: [riotAccountId], references: [id], onDelete: Restrict)
+
   createdAt DateTime @default(now())
+
+  @@index([riotAccountId])
 }
 
 model TftChampion {
@@ -218,6 +236,31 @@ model TftMatchParticipant {
   @@unique([matchId, puuid])
   @@index([puuid])
   @@index([placement])
+}
+
+model RiotAccount {
+  id String @id @default(cuid())
+
+  gameName String?
+  tagLine String?
+  puuid String?
+  isPrimary Boolean @default(false)
+
+  profileIconId Int?
+  summonerLevel Int?
+
+  lastProfileSync DateTime?
+  lastMatchSync   DateTime?
+  lastRankSync    DateTime?
+  lastTftMatchSync DateTime?
+  lastTftRankSync  DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  rankSnapshots RankSnapshot[]
+  tftRankSnapshots TftRankSnapshot[]
+  tftMatches TftMatch[]
 }
 
 model AppConfig {

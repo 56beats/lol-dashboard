@@ -212,6 +212,13 @@ export async function getLolMatchesForDisplay(
   const normalizedPeriod = normalizeLolPeriod(period);
 
   const lolMatches = await prisma.lolMatch.findMany({
+    where: {
+      participants: {
+        some: {
+          puuid: myPuuid,
+        },
+      },
+    },
     orderBy: {
       playedAt: "desc",
     },

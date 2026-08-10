@@ -5,14 +5,22 @@ import Link from "next/link";
 type Props = {
   activeGame: "lol" | "tft";
   period?: string;
+  accountId?: string;
 };
 
-export function GameSelector({ activeGame, period = "recent20" }: Props) {
+export function GameSelector({
+  activeGame,
+  period = "recent20",
+  accountId,
+}: Props) {
   const buildHref = (game: "lol" | "tft") => {
     const params = new URLSearchParams();
     params.set("game", game);
     if (period) {
       params.set("period", period);
+    }
+    if (accountId) {
+      params.set("account", accountId);
     }
     return `/?${params.toString()}`;
   };

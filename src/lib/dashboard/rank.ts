@@ -35,8 +35,15 @@ function isRankSnapshotInPeriod(createdAt: Date, period: LolPeriod): boolean {
 /**
  * LoLランク履歴を取得し、グラフ表示用へ変換する
  */
-export async function getLolRankChartData(): Promise<RankChartData[]> {
+export async function getLolRankChartData(
+  accountId?: string
+): Promise<RankChartData[]> {
   const rankHistory = await prisma.rankSnapshot.findMany({
+    where: accountId
+      ? {
+          riotAccountId: accountId,
+        }
+      : {},
     orderBy: {
       createdAt: "asc",
     },
@@ -56,8 +63,16 @@ export async function getLolRankChartData(): Promise<RankChartData[]> {
 /**
  * 最新LoLランクと前回ランクを取得する
  */
-export async function getLolRankHistory(period: LolPeriod = "recent20") {
+export async function getLolRankHistory(
+  period: LolPeriod = "recent20",
+  accountId?: string
+) {
   const rankHistory = await prisma.rankSnapshot.findMany({
+    where: accountId
+      ? {
+          riotAccountId: accountId,
+        }
+      : {},
     orderBy: {
       createdAt: "asc",
     },

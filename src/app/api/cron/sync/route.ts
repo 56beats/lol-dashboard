@@ -1,3 +1,4 @@
+import { prisma } from "@/lib/prisma";
 import { syncLolMatches } from "@/lib/sync/lol/sync";
 import { syncLolRank } from "@/lib/sync/lol/rank";
 import { syncTftMatches } from "@/lib/sync/tft/sync";
@@ -25,60 +26,91 @@ export async function GET(request: Request) {
 
   const startedAt = new Date().toISOString();
 
-  let lolMatches: { ok: boolean; fetched?: number; saved?: number } = {
-    ok: false,
-  };
-  let lolRank: { ok: boolean; changed?: boolean } = { ok: false };
-  let tftMatches: { ok: boolean; saved?: number } = { ok: false };
-  let tftRank: { ok: boolean; changed?: boolean } = { ok: false };
+  const accounts = await prisma.riotAccount.findMany({
+    orderBy: {
+      createdAt: "asc",
+    },
+  });
+  const targetAccountIds =
+    accounts.length > 0 ? accounts.map((account) => account.id) : [undefined];
 
-  try {
-    const result = await syncLolMatches();
-    lolMatches = { ok: true, ...result };
-  } catch (error) {
-    console.error(
-      "[Cron] LoL試合同期エラー:",
-      error instanceof Error ? error.message : "Unknown"
-    );
-  }
+  const results: Array<{
+    accountId: string | null;
+    lolMatches: { ok: boolean; fetched?: number; saved?: number };
+    lolRank: { ok: boolean; changed?: boolean };
+    tftMatches: { ok: boolean; saved?: number };
+    tftRank: { ok: boolean; changed?: boolean };
+  }> = [];
 
-  try {
-    const result = await syncLolRank();
-    await updateLastRankSync();
-    lolRank = { ok: true, ...result };
-  } catch (error) {
-    console.error(
-      "[Cron] LoLランク同期エラー:",
-      error instanceof Error ? error.message : "Unknown"
-    );
-  }
+  for (const accountId of targetAccountIds) {
+    let lolMatches: { ok: boolean; fetched?: number; saved?: number } = {
+      ok: false,
+    };
+    let lolRank: { ok: boolean; changed?: boolean } = { ok: false };
+    let tftMatches: { ok: boolean; saved?: number } = { ok: false };
+    let tftRank: { ok: boolean; changed?: boolean } = { ok: false };
 
-  try {
-    const result = await syncTftMatches();
-    await updateLastTftMatchSync();
-    tftMatches = { ok: true, ...result };
-  } catch (error) {
-    console.error(
-      "[Cron] TFT試合同期エラー:",
-      error instanceof Error ? error.message : "Unknown"
-    );
-  }
+    try {
+      const result = await syncLolMatches(accountId);
+      lolMatches = { ok: true, ...result };
+    } catch (error) {
+      console.error(
+        "[Cron] LoL試合同期エラー:",
+        error instanceof Error ? error.message : "Unknown"
+      );
+    }
 
-  try {
-    const result = await syncTftRank();
-    await updateLastTftRankSync();
-    tftRank = { ok: true, ...result };
-  } catch (error) {
-    console.error(
-      "[Cron] TFTランク同期エラー:",
-      error instanceof Error ? error.message : "Unknown"
-    );
+    try {
+      const result = await syncLolRank(accountId);
+      await updateLastRankSync(accountId);
+      lolRank = { ok: true, ...result };
+    } catch (error) {
+      console.error(
+        "[Cron] LoLランク同期エラー:",
+        error instanceof Error ? error.message : "Unknown"
+      );
+    }
+
+    try {
+      const result = await syncTftMatches(accountId);
+      await updateLastTftMatchSync(accountId);
+      tftMatches = { ok: true, ...result };
+    } catch (error) {
+      console.error(
+        "[Cron] TFT試合同期エラー:",
+        error instanceof Error ? error.message : "Unknown"
+      );
+    }
+
+    try {
+      const result = await syncTftRank(accountId);
+      await updateLastTftRankSync(accountId);
+      tftRank = { ok: true, ...result };
+    } catch (error) {
+      console.error(
+        "[Cron] TFTランク同期エラー:",
+        error instanceof Error ? error.message : "Unknown"
+      );
+    }
+
+    results.push({
+      accountId: accountId ?? null,
+      lolMatches,
+      lolRank,
+      tftMatches,
+      tftRank,
+    });
   }
 
   const finishedAt = new Date().toISOString();
 
-  const results = { lolMatches, lolRank, tftMatches, tftRank };
-  const ok = Object.values(results).every((result) => result.ok);
+  const ok = results.every(
+    (result) =>
+      result.lolMatches.ok &&
+      result.lolRank.ok &&
+      result.tftMatches.ok &&
+      result.tftRank.ok
+  );
 
   return Response.json({
     ok,

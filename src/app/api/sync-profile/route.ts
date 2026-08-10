@@ -7,14 +7,28 @@ import { syncProfile } from "@/lib/sync/profile";
  * - POST: 同期を実行し、結果をJSONで返す
  * - GET: 同期を実行し、トップページへリダイレクト
  */
-export async function POST() {
+export async function POST(request?: Request) {
   try {
-    const result = await syncProfile();
+    const url = request ? new URL(request.url) : null;
+    const accountId =
+      url?.searchParams.get("account") ??
+      url?.searchParams.get("accountId") ??
+      undefined;
+    const createNew = url?.searchParams.get("createNew") === "1";
+    const gameName = url?.searchParams.get("gameName") ?? undefined;
+    const tagLine = url?.searchParams.get("tagLine") ?? undefined;
+    const result = await syncProfile({
+      accountId,
+      gameName,
+      tagLine,
+      createNew,
+    });
 
     return NextResponse.json({
       ok: true,
       gameName: result.gameName,
       tagLine: result.tagLine,
+      accountId: result.accountId,
     });
   } catch (error) {
     console.error(error);
@@ -30,7 +44,7 @@ export async function POST() {
 }
 
 export async function GET(request: Request) {
-  await POST();
+  await POST(request);
 
   return Response.redirect(new URL("/", request.url));
 }

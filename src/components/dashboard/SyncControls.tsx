@@ -8,6 +8,7 @@ type SyncType = "matches" | "rank";
 
 type Props = {
   game: GameType;
+  accountId?: string;
   lastMatchSync?: Date | null;
   lastRankSync?: Date | null;
 };
@@ -61,7 +62,12 @@ function getSyncErrorMessage(status: number): string {
  * Server Componentであるpage.tsxは維持し、
  * 同期状態を必要とするこの部分だけClient Componentにする。
  */
-export function SyncControls({ game, lastMatchSync, lastRankSync }: Props) {
+export function SyncControls({
+  game,
+  accountId,
+  lastMatchSync,
+  lastRankSync,
+}: Props) {
   const router = useRouter();
 
   const [syncState, setSyncState] = useState<SyncState>({
@@ -91,10 +97,13 @@ export function SyncControls({ game, lastMatchSync, lastRankSync }: Props) {
     });
 
     try {
-      const response = await fetch(endpoint, {
-        method: "GET",
-        cache: "no-store",
-      });
+      const response = await fetch(
+        `${endpoint}${accountId ? `?account=${encodeURIComponent(accountId)}` : ""}`,
+        {
+          method: "GET",
+          cache: "no-store",
+        }
+      );
 
       if (!response.ok) {
         throw new Error(getSyncErrorMessage(response.status));

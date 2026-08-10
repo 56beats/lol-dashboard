@@ -197,10 +197,8 @@ async function saveMatchDetail(match: RiotMatchDetail) {
  * - DBに未保存の試合だけ詳細を取得＆保存
  * - 同期時刻を記録
  */
-export async function syncLolMatches() {
-  // AppConfigに保存済みのPUUIDを使う。
-  // Account APIはsync-profileだけで呼び出す方針。
-  const puuid = await getConfiguredPuuid();
+export async function syncLolMatches(accountId?: string | null) {
+  const puuid = await getConfiguredPuuid(accountId);
 
   const matchIds = await fetchMatchIds(puuid);
 
@@ -229,7 +227,7 @@ export async function syncLolMatches() {
     await saveMatchDetail(detail);
   }
 
-  await updateLastMatchSync();
+  await updateLastMatchSync(accountId);
 
   return {
     fetched: matchIds.length,

@@ -8,22 +8,48 @@ export async function getAppConfig() {
   });
 }
 
-/**
- * AppConfigからPUUIDを取得する
- *
- * sync-profile 実行前は puuid がないため、
- * 各同期APIではここで明示的にエラーにする。
- */
-export async function getConfiguredPuuid() {
-  const appConfig = await getAppConfig();
+export async function getConfiguredAccount(accountId?: string | null) {
+  if (accountId) {
+    return prisma.riotAccount.findUnique({
+      where: {
+        id: accountId,
+      },
+    });
+  }
 
-  if (!appConfig?.puuid) {
+  const primaryAccount = await prisma.riotAccount.findFirst({
+    where: {
+      isPrimary: true,
+    },
+    orderBy: {
+      createdAt: "asc",
+    },
+  });
+
+  if (primaryAccount) {
+    return primaryAccount;
+  }
+
+  return prisma.riotAccount.findFirst({
+    orderBy: {
+      createdAt: "asc",
+    },
+  });
+}
+
+/**
+ * 指定アカウントまたはプライマリアカウントのPUUIDを取得する
+ */
+export async function getConfiguredPuuid(accountId?: string | null) {
+  const account = await getConfiguredAccount(accountId);
+
+  if (!account?.puuid) {
     throw new Error(
-      "AppConfig.puuidが未設定です。先に /api/sync-profile を実行してください。"
+      "RiotアカウントのPUUIDが未設定です。先に /api/sync-profile を実行してください。"
     );
   }
 
-  return appConfig.puuid;
+  return account.puuid;
 }
 
 async function updateSyncTime(
@@ -32,11 +58,18 @@ async function updateSyncTime(
     | "lastMatchSync"
     | "lastRankSync"
     | "lastTftMatchSync"
-    | "lastTftRankSync"
+    | "lastTftRankSync",
+  accountId?: string | null
 ) {
-  await prisma.appConfig.update({
+  const resolvedAccount = await getConfiguredAccount(accountId);
+
+  if (!resolvedAccount) {
+    return;
+  }
+
+  await prisma.riotAccount.update({
     where: {
-      id: "default",
+      id: resolvedAccount.id,
     },
     data: {
       [field]: new Date(),
@@ -44,22 +77,22 @@ async function updateSyncTime(
   });
 }
 
-export async function updateLastProfileSync() {
-  return updateSyncTime("lastProfileSync");
+export async function updateLastProfileSync(accountId?: string | null) {
+  return updateSyncTime("lastProfileSync", accountId);
 }
 
-export async function updateLastMatchSync() {
-  return updateSyncTime("lastMatchSync");
+export async function updateLastMatchSync(accountId?: string | null) {
+  return updateSyncTime("lastMatchSync", accountId);
 }
 
-export async function updateLastRankSync() {
-  return updateSyncTime("lastRankSync");
+export async function updateLastRankSync(accountId?: string | null) {
+  return updateSyncTime("lastRankSync", accountId);
 }
 
-export async function updateLastTftMatchSync() {
-  return updateSyncTime("lastTftMatchSync");
+export async function updateLastTftMatchSync(accountId?: string | null) {
+  return updateSyncTime("lastTftMatchSync", accountId);
 }
 
-export async function updateLastTftRankSync() {
-  return updateSyncTime("lastTftRankSync");
+export async function updateLastTftRankSync(accountId?: string | null) {
+  return updateSyncTime("lastTftRankSync", accountId);
 }

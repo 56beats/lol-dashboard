@@ -10,17 +10,20 @@ import type { RiotTftMatchDetail } from "@/types/tft";
  * 譌｢縺ｫ菫晏ｭ俶ｸ医∩縺ｮmatchId縺ｯ繧ｹ繧ｭ繝・・縲・
  * 繝励Ξ繧､縺励※縺・↑縺・悄髢薙↓辟｡鬧・↑繝・・繧ｿ縺悟｢励∴縺ｪ縺・・
  */
-export async function syncTftMatches(): Promise<{ saved: number }> {
-  const puuid = await getConfiguredPuuid();
+export async function syncTftMatches(
+  accountId?: string | null
+): Promise<{ saved: number }> {
+  const puuid = await getConfiguredPuuid(accountId);
   const matchIds = await getTftMatchIds(puuid, 20);
 
   let saved = 0;
 
   for (const matchId of matchIds) {
     // 譌｢縺ｫ菫晏ｭ俶ｸ医∩縺九←縺・°遒ｺ隱・
-    const exists = await prisma.tftMatch.findUnique({
+    const exists = await prisma.tftMatch.findFirst({
       where: {
-        id: matchId,
+        matchId,
+        riotAccountId: accountId ?? null,
       },
     });
 
@@ -50,14 +53,14 @@ export async function syncTftMatches(): Promise<{ saved: number }> {
 
     await prisma.tftMatch.create({
       data: {
-        id: matchId,
+        id: `${accountId ?? "legacy"}-${matchId}`,
+        matchId,
+        riotAccountId: accountId ?? null,
         placement: me.placement,
         level: me.level,
 
-        // 繧ｪ繝ｼ繧ｰ繝｡繝ｳ繝・D繧剃ｿ晏ｭ倥り｡ｨ遉ｺ譎ゅ↓Data Dragon縺ｧ譌･譛ｬ隱槫錐繝ｻ逕ｻ蜒上∈螟画鋤縺吶ｋ
         augments: me.augments ?? [],
 
-        // 迚ｹ諤ｧ縺ｯ縲御ｽ穂ｽ薙〒逋ｺ蜍輔＠縺ｦ縺・ｋ縺九阪御ｽ墓ｮｵ髫守岼縺九阪′驥崎ｦ√↑縺ｮ縺ｧ隧ｳ邏ｰ菫晏ｭ・
         traits:
           me.traits
             ?.filter((trait) => trait.tier_current > 0)
@@ -68,7 +71,6 @@ export async function syncTftMatches(): Promise<{ saved: number }> {
               style: trait.style,
             })) ?? [],
 
-        // 繝ｦ繝九ャ繝医・笘・Ξ繝吶Ν縺ｨ陬・ｙ縺碁㍾隕√↑縺ｮ縺ｧ隧ｳ邏ｰ菫晏ｭ・
         units:
           me.units?.map((unit) => ({
             id: unit.character_id,
@@ -85,4 +87,3 @@ export async function syncTftMatches(): Promise<{ saved: number }> {
 
   return { saved };
 }
-

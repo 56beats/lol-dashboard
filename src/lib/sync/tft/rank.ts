@@ -2,15 +2,20 @@
 import { getConfiguredPuuid } from "@/lib/sync/appConfig";
 import { getTftLeagueEntriesByPuuid } from "@/lib/tft/rank";
 import type { RiotLeagueEntry } from "@/types/riot";
-import { extractRankValues, hasRankChanged, type RankValues } from "@/lib/sync/rank/shared";
+import {
+  extractRankValues,
+  hasRankChanged,
+  type RankValues,
+} from "@/lib/sync/rank/shared";
 
 /**
  * TFT 繝ｩ繝ｳ繧ｯ諠・ｱ繧貞酔譛溘＠縺ｦDB菫晏ｭ倥☆繧・
  * 蜑榊屓縺ｨ豈碑ｼ・＠縺ｦ螟牙喧縺後≠繧句ｴ蜷医□縺台ｿ晏ｭ・
  */
-export async function syncTftRank(): Promise<{ changed: boolean }> {
-  // TFT隧ｦ蜷亥酔譛溘〒縺ｯAccount API繧貞他縺ｰ縺壹、ppConfig縺ｮPUUID繧剃ｽｿ縺・
-  const puuid = await getConfiguredPuuid();
+export async function syncTftRank(
+  accountId?: string | null
+): Promise<{ changed: boolean }> {
+  const puuid = await getConfiguredPuuid(accountId);
   const entries = await getTftLeagueEntriesByPuuid(puuid);
 
   // TFT騾壼ｸｸ繝ｩ繝ｳ繧ｯ繧剃ｿ晏ｭ伜ｯｾ雎｡縺ｫ縺吶ｋ
@@ -52,10 +57,10 @@ export async function syncTftRank(): Promise<{ changed: boolean }> {
   await prisma.tftRankSnapshot.create({
     data: {
       queue: rankedTft.queueType,
+      riotAccountId: accountId ?? null,
       ...currentValues,
     },
   });
 
   return { changed: true };
 }
-

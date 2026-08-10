@@ -2,15 +2,20 @@ import { prisma } from "@/lib/prisma";
 import { getConfiguredPuuid } from "@/lib/sync/appConfig";
 import { getLeagueEntriesByPuuid } from "@/lib/riot";
 import type { RiotLeagueEntry } from "@/types/riot";
-import { extractRankValues, hasRankChanged, type RankValues } from "@/lib/sync/rank/shared";
+import {
+  extractRankValues,
+  hasRankChanged,
+  type RankValues,
+} from "@/lib/sync/rank/shared";
 
 /**
  * LoL ランク情報を同期してDB保存する
  * 前回と比較して変化がある場合だけ保存
  */
-export async function syncLolRank(): Promise<{ changed: boolean }> {
-  // Account APIはsync-profileだけで呼ぶ。ランク同期ではDBに保存済みのPUUIDを使う
-  const puuid = await getConfiguredPuuid();
+export async function syncLolRank(
+  accountId?: string | null
+): Promise<{ changed: boolean }> {
+  const puuid = await getConfiguredPuuid(accountId);
   const entries = await getLeagueEntriesByPuuid(puuid);
 
   // Solo/Duo のみ保存対象
@@ -52,6 +57,7 @@ export async function syncLolRank(): Promise<{ changed: boolean }> {
   await prisma.rankSnapshot.create({
     data: {
       queue: soloQueue.queueType,
+      riotAccountId: accountId ?? null,
       ...currentValues,
     },
   });

@@ -24,6 +24,11 @@ export function LolPeriodFilter({ activePeriod }: Props) {
       {periods.map((period) => {
         const params = new URLSearchParams(searchParams.toString());
         params.set("period", period.value);
+        const accountId =
+          searchParams.get("account") ?? searchParams.get("accountId");
+        if (accountId) {
+          params.set("account", accountId);
+        }
         const href = `${pathname}?${params.toString()}`;
         const isActive = activePeriod === period.value;
 

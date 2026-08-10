@@ -150,9 +150,15 @@ export function getTftPeriodLabel(period: LolPeriod): string {
  * TFTマッチデータを取得し、表示用形式へ変換する
  */
 export async function getTftMatchesForDisplay(
-  period: string | LolPeriod = "recent20"
+  period: string | LolPeriod = "recent20",
+  accountId?: string
 ): Promise<TftMatchForDisplay[]> {
   const tftMatches = await prisma.tftMatch.findMany({
+    where: accountId
+      ? {
+          riotAccountId: accountId,
+        }
+      : {},
     orderBy: {
       playedAt: "desc",
     },
@@ -514,8 +520,15 @@ export function calculateTftPatchComparison(
 /**
  * TFTランク履歴を取得し、グラフ表示用へ変換する
  */
-export async function getTftRankChartData(): Promise<RankChartData[]> {
+export async function getTftRankChartData(
+  accountId?: string
+): Promise<RankChartData[]> {
   const tftRankHistory = await prisma.tftRankSnapshot.findMany({
+    where: accountId
+      ? {
+          riotAccountId: accountId,
+        }
+      : {},
     orderBy: {
       createdAt: "asc",
     },
@@ -535,8 +548,13 @@ export async function getTftRankChartData(): Promise<RankChartData[]> {
 /**
  * 最新TFTランクデータを取得する
  */
-export async function getLatestTftRank() {
+export async function getLatestTftRank(accountId?: string) {
   const tftRankHistory = await prisma.tftRankSnapshot.findMany({
+    where: accountId
+      ? {
+          riotAccountId: accountId,
+        }
+      : {},
     orderBy: {
       createdAt: "asc",
     },

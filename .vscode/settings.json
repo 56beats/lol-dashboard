@@ -6,5 +6,11 @@
   },
   "[typescriptreact]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "chat.tools.terminal.autoApprove": {
+    "/^powershell -Command \"\\$env:POSTGRES_URL_NON_POOLING = 'postgresql://neondb_owner:npg_3FMOv0tH72YfL@ep-weathered-cake-at91hnji\\.c-9\\.us-east-1\\.aws\\.neon\\.tech/neondb\\?sslmode=require'; npx prisma migrate diff --from-url \\$env:POSTGRES_URL_NON_POOLING --to-schema-datamodel prisma/schema\\.prisma --exit-code\"$/": {
+      "approve": true,
+      "matchCommandLine": true
+    }
   }
 }

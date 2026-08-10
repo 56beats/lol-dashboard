@@ -7,9 +7,14 @@ import { syncLolMatches } from "@/lib/sync/lol/sync";
  * - POST: 同期を実行し、結果をJSONで返す
  * - GET: 同期を実行し、トップページへリダイレクト
  */
-export async function POST() {
+export async function POST(request?: Request) {
   try {
-    const result = await syncLolMatches();
+    const url = request ? new URL(request.url) : null;
+    const accountId =
+      url?.searchParams.get("account") ??
+      url?.searchParams.get("accountId") ??
+      undefined;
+    const result = await syncLolMatches(accountId);
 
     return NextResponse.json({
       ok: true,
@@ -30,7 +35,7 @@ export async function POST() {
 }
 
 export async function GET(request: Request) {
-  await POST();
+  await POST(request);
 
   return Response.redirect(new URL("/", request.url));
 }

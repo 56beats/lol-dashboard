@@ -48,6 +48,8 @@ type Props = {
   searchParams?: Promise<{
     game?: string;
     period?: string;
+    account?: string;
+    accountId?: string;
   }>;
 };
 
@@ -55,13 +57,33 @@ export default async function Home({ searchParams }: Props) {
   const params = await searchParams;
   const activeGame = params?.game === "tft" ? "tft" : "lol";
   const period = (params?.period as LolPeriod | undefined) ?? "recent20";
+  const accountId = params?.account ?? params?.accountId;
 
   const appConfig = await prisma.appConfig.findUnique({
     where: {
       id: "default",
     },
   });
-  const myPuuid = appConfig?.puuid;
+  const riotAccounts = await prisma.riotAccount.findMany({
+    orderBy: {
+      createdAt: "asc",
+    },
+  });
+  const selectedAccount = accountId
+    ? await prisma.riotAccount.findUnique({
+        where: {
+          id: accountId,
+        },
+      })
+    : await prisma.riotAccount.findFirst({
+        where: {
+          isPrimary: true,
+        },
+        orderBy: {
+          createdAt: "asc",
+        },
+      });
+  const myPuuid = selectedAccount?.puuid ?? appConfig?.puuid;
 
   const lolMatchesForDisplay = await getLolMatchesForDisplay(myPuuid, period);
   const lolStats = calculateLolStats(lolMatchesForDisplay);
@@ -69,36 +91,56 @@ export default async function Home({ searchParams }: Props) {
   const roleStats = calculateLolRoleStats(lolMatchesForDisplay);
   const patchStats = calculateLolPatchStats(lolMatchesForDisplay);
   const patchComparison = calculateLolPatchComparison(lolMatchesForDisplay);
-  const { latestRank, history } = await getLolRankHistory(period);
+  const { latestRank, history } = await getLolRankHistory(
+    period,
+    selectedAccount?.id
+  );
   const lpDiff = calculateLolRankLpDiffForPeriod(history);
-  const rankChartData = await getLolRankChartData();
+  const rankChartData = await getLolRankChartData(selectedAccount?.id);
 
-  const tftMatchesForDisplay = await getTftMatchesForDisplay(period);
+  const tftMatchesForDisplay = await getTftMatchesForDisplay(
+    period,
+    selectedAccount?.id
+  );
   const tftStats = calculateTftStats(tftMatchesForDisplay);
   const tftTraitStats = calculateTftTraitStats(tftMatchesForDisplay);
   const tftUnitStats = calculateTftUnitStats(tftMatchesForDisplay);
   const tftAugmentStats = calculateTftAugmentStats(tftMatchesForDisplay);
   const tftPatchStats = calculateTftPatchStats(tftMatchesForDisplay);
   const tftPatchComparison = calculateTftPatchComparison(tftMatchesForDisplay);
-  const latestTftRank = await getLatestTftRank();
-  const tftRankChartData = await getTftRankChartData();
+  const latestTftRank = await getLatestTftRank(selectedAccount?.id);
+  const tftRankChartData = await getTftRankChartData(selectedAccount?.id);
 
   return (
     <main className="bg-background text-foreground min-h-screen">
       <DashboardHeader
         activeGame={activeGame}
-        lastLolMatchSync={appConfig?.lastMatchSync}
-        lastLolRankSync={appConfig?.lastRankSync}
-        lastTftMatchSync={appConfig?.lastTftMatchSync}
-        lastTftRankSync={appConfig?.lastTftRankSync}
+        accountId={selectedAccount?.id}
+        accountName={
+          selectedAccount?.gameName
+            ? `${selectedAccount.gameName}#${selectedAccount.tagLine ?? ""}`
+            : undefined
+        }
+        lastLolMatchSync={
+          selectedAccount?.lastMatchSync ?? appConfig?.lastMatchSync
+        }
+        lastLolRankSync={
+          selectedAccount?.lastRankSync ?? appConfig?.lastRankSync
+        }
+        lastTftMatchSync={
+          selectedAccount?.lastTftMatchSync ?? appConfig?.lastTftMatchSync
+        }
+        lastTftRankSync={
+          selectedAccount?.lastTftRankSync ?? appConfig?.lastTftRankSync
+        }
       />
 
       <div className="mx-auto max-w-6xl px-3 py-5 sm:px-4 md:px-6 md:py-10">
         <section className="border-border bg-surface rounded-3xl border p-4 shadow-2xl backdrop-blur md:p-8">
           <div className="text-muted text-sm">Riot ID</div>
           <h1 className="mt-2 text-2xl font-bold sm:text-3xl md:text-4xl">
-            {appConfig
-              ? `${appConfig.riotGameName}#${appConfig.riotTagLine}`
+            {selectedAccount?.gameName || appConfig
+              ? `${selectedAccount?.gameName ?? appConfig?.riotGameName}#${selectedAccount?.tagLine ?? appConfig?.riotTagLine}`
               : "Riot ID未同期"}
           </h1>
           <p className="text-muted mt-3 text-sm">
@@ -106,7 +148,45 @@ export default async function Home({ searchParams }: Props) {
           </p>
         </section>
 
-        <GameSelector activeGame={activeGame} period={period} />
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <GameSelector
+            activeGame={activeGame}
+            period={period}
+            accountId={selectedAccount?.id}
+          />
+        </div>
+
+        {riotAccounts.length > 0 ? (
+          <section className="mt-4 flex flex-wrap gap-2">
+            {riotAccounts.map((account) => {
+              const label = account.gameName
+                ? `${account.gameName}${account.tagLine ? `#${account.tagLine}` : ""}`
+                : `アカウント ${account.id.slice(0, 6)}`;
+              const params = new URLSearchParams({
+                game: activeGame,
+                period,
+              });
+              if (account.id) {
+                params.set("account", account.id);
+              }
+
+              return (
+                <a
+                  key={account.id}
+                  href={`/?${params.toString()}`}
+                  className={[
+                    "rounded-full border px-3 py-2 text-sm font-semibold transition",
+                    account.id === selectedAccount?.id
+                      ? "border-primary bg-primary text-surface"
+                      : "border-border bg-surface-subtle text-muted hover:bg-primary-light",
+                  ].join(" ")}
+                >
+                  {label}
+                </a>
+              );
+            })}
+          </section>
+        ) : null}
 
         {activeGame === "lol" ? (
           <>
@@ -176,18 +256,6 @@ export default async function Home({ searchParams }: Props) {
               <PatchComparison comparison={patchComparison} />
             </section>
 
-            <section className="mt-6 grid gap-4 lg:grid-cols-2">
-              <div className="border-border bg-surface rounded-2xl border p-5 shadow-lg backdrop-blur">
-                <div className="text-muted mb-3 text-sm">分析対象期間</div>
-                <div className="text-foreground text-lg font-bold">
-                  {getLolPeriodLabel(period)}
-                </div>
-                <div className="text-muted mt-2 text-sm">
-                  勝率・KDA・チャンピオン・ロール・パッチ・LP増減がこの期間で集計されます
-                </div>
-              </div>
-            </section>
-
             <section className="mt-6">
               <RankChart data={rankChartData} />
             </section>
@@ -237,22 +305,12 @@ export default async function Home({ searchParams }: Props) {
               </div>
 
               <StatCard
-                label="平均順位"
-                value={tftStats.averagePlacement}
-                subText="最近20試合"
-              />
-
-              <StatCard
                 label="Top4率"
                 value={`${tftStats.top4Rate}%`}
                 subText={`${tftStats.top4Count} / ${tftMatchesForDisplay.length}`}
               />
 
-              <StatCard
-                label="試合数"
-                value={tftMatchesForDisplay.length}
-                subText={getTftPeriodLabel(period)}
-              />
+              <StatCard label="試合数" value={tftMatchesForDisplay.length} />
             </section>
 
             <section className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
