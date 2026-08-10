@@ -1,19 +1,28 @@
 import { prisma } from "@/lib/prisma";
 import { resolveDdragonVersion } from "@/lib/ddragon/shared";
 
+export type LolPeriod = "recent20" | "7d" | "30d" | "all";
+
 type LolMatchForDisplay = {
   id: string;
   champion: string;
   championJa: string;
+  championId: number;
   win: boolean;
   kills: number;
   deaths: number;
   assists: number;
   gameMode: string;
   queueId: number | null;
+  patch: string;
   playedAt: Date;
   itemIds: number[];
   ddragonVersion: string;
+  teamPosition: string | null;
+  individualPosition: string | null;
+  cs: number;
+  damage: number;
+  visionScore: number;
   participants: Array<{
     puuid: string;
     isMe: boolean;
@@ -36,7 +45,7 @@ type LolMatchForDisplay = {
   }>;
 };
 
-type LolStats = {
+export type LolStats = {
   wins: number;
   losses: number;
   winRate: number;
@@ -46,24 +55,169 @@ type LolStats = {
   avgKda: string;
 };
 
+export type ChampionStat = {
+  championId: number;
+  championName: string;
+  games: number;
+  wins: number;
+  losses: number;
+  winRate: number;
+  avgKda: string;
+  avgKills: number;
+  avgDeaths: number;
+  avgAssists: number;
+  avgCs: number;
+  avgDamage: number;
+};
+
+export type RoleStat = {
+  role: string;
+  label: string;
+  games: number;
+  wins: number;
+  losses: number;
+  winRate: number;
+  avgKda: string;
+};
+
+export type PatchStat = {
+  patch: string;
+  games: number;
+  wins: number;
+  losses: number;
+  winRate: number;
+  avgKda: string;
+};
+
+function normalizeLolPeriod(period?: string): LolPeriod {
+  if (period === "7d" || period === "30d" || period === "all") {
+    return period;
+  }
+
+  return "recent20";
+}
+
+function filterMatchesByPeriod<T extends { playedAt: Date }>(
+  matches: T[],
+  period: LolPeriod
+): T[] {
+  if (period === "all") {
+    return matches;
+  }
+
+  if (period === "recent20") {
+    return matches.slice(0, 20);
+  }
+
+  const now = new Date();
+  const cutoff = new Date(now);
+
+  if (period === "7d") {
+    cutoff.setDate(now.getDate() - 7);
+  }
+
+  if (period === "30d") {
+    cutoff.setDate(now.getDate() - 30);
+  }
+
+  return matches.filter((match) => match.playedAt >= cutoff);
+}
+
+function formatAverage(value: number, digits = 2): number {
+  return Number(value.toFixed(digits));
+}
+
+function formatKdaAverage(
+  kills: number,
+  deaths: number,
+  assists: number
+): string {
+  if (deaths === 0) {
+    return "Perfect";
+  }
+
+  return ((kills + assists) / deaths).toFixed(2);
+}
+
+function getRoleKey(
+  teamPosition?: string | null,
+  individualPosition?: string | null
+) {
+  const primary = teamPosition?.toUpperCase();
+  const fallback = individualPosition?.toUpperCase();
+
+  if (primary === "TOP" || fallback === "TOP") {
+    return "TOP";
+  }
+  if (primary === "JUNGLE" || fallback === "JUNGLE") {
+    return "JUNGLE";
+  }
+  if (primary === "MIDDLE" || fallback === "MIDDLE") {
+    return "MIDDLE";
+  }
+  if (primary === "BOTTOM" || fallback === "BOTTOM") {
+    return "BOTTOM";
+  }
+  if (primary === "UTILITY" || fallback === "UTILITY") {
+    return "UTILITY";
+  }
+
+  return null;
+}
+
+function comparePatchVersions(a: string, b: string): number {
+  if (a === b) {
+    return 0;
+  }
+
+  if (a === "Unknown") {
+    return 1;
+  }
+
+  if (b === "Unknown") {
+    return -1;
+  }
+
+  const [aMajor = 0, aMinor = 0] = a.split(".").map(Number);
+  const [bMajor = 0, bMinor = 0] = b.split(".").map(Number);
+
+  if (aMajor !== bMajor) {
+    return bMajor - aMajor;
+  }
+
+  return bMinor - aMinor;
+}
+
+export function getLolPeriodLabel(period: LolPeriod): string {
+  switch (period) {
+    case "7d":
+      return "7日";
+    case "30d":
+      return "30日";
+    case "all":
+      return "全期間";
+    default:
+      return "最近20試合";
+  }
+}
+
 /**
  * LoLマッチデータを取得し、表示用形式へ変換する
- *
- * DBの新しいLoL試合構造から最近20試合を取得し、
- * 各参加者の詳細情報を含む形へ変換する。
  */
 export async function getLolMatchesForDisplay(
-  myPuuid: string | null | undefined
+  myPuuid: string | null | undefined,
+  period: string | LolPeriod = "recent20"
 ): Promise<LolMatchForDisplay[]> {
   if (!myPuuid) {
     return [];
   }
 
+  const normalizedPeriod = normalizeLolPeriod(period);
+
   const lolMatches = await prisma.lolMatch.findMany({
     orderBy: {
       playedAt: "desc",
     },
-    take: 20,
     include: {
       participants: {
         orderBy: [{ teamId: "asc" }, { participantId: "asc" }],
@@ -71,15 +225,15 @@ export async function getLolMatchesForDisplay(
     },
   });
 
-  // LoLチャンピオン情報をDBから取得
+  const filteredMatches = filterMatchesByPeriod(lolMatches, normalizedPeriod);
+
   const lolChampions = await prisma.lolChampion.findMany();
   const lolChampionMap = new Map(
     lolChampions.map((champion) => [champion.key, champion])
   );
 
   const matches = await Promise.all(
-    lolMatches.map(async (match) => {
-      // 自分の参加者情報を取得
+    filteredMatches.map(async (match) => {
       const me = match.participants.find(
         (participant) => participant.puuid === myPuuid
       );
@@ -89,17 +243,20 @@ export async function getLolMatchesForDisplay(
       }
 
       const champion = lolChampionMap.get(me.championId);
+      const cs = (me.totalMinionsKilled ?? 0) + (me.neutralMinionsKilled ?? 0);
 
       return {
         id: match.matchId,
         champion: me.championName,
         championJa: champion?.nameJa ?? me.championName,
+        championId: me.championId,
         win: me.win,
         kills: me.kills,
         deaths: me.deaths,
         assists: me.assists,
         gameMode: match.gameMode,
         queueId: match.queueId,
+        patch: match.patch ?? "Unknown",
         playedAt: match.playedAt,
         itemIds: [
           me.item0 ?? 0,
@@ -111,7 +268,11 @@ export async function getLolMatchesForDisplay(
           me.item6 ?? 0,
         ],
         ddragonVersion: await resolveDdragonVersion(match.gameVersion),
-        // クリック展開時に表示する10人分の参加者情報
+        teamPosition: me.teamPosition,
+        individualPosition: me.individualPosition,
+        cs,
+        damage: me.totalDamageDealtToChampions ?? 0,
+        visionScore: me.visionScore ?? 0,
         participants: match.participants.map((participant) => {
           const participantChampion = lolChampionMap.get(
             participant.championId
@@ -161,12 +322,11 @@ export async function getLolMatchesForDisplay(
 /**
  * LoLマッチデータから集計統計を計算する
  */
-export function calculateLolStats(
-  matches: LolMatchForDisplay[]
-): LolStats {
+export function calculateLolStats(matches: LolMatchForDisplay[]): LolStats {
   const wins = matches.filter((m) => m.win).length;
   const losses = matches.length - wins;
-  const winRate = matches.length > 0 ? Math.round((wins / matches.length) * 100) : 0;
+  const winRate =
+    matches.length > 0 ? Math.round((wins / matches.length) * 100) : 0;
 
   const totalKills = matches.reduce((sum, m) => sum + m.kills, 0);
   const totalDeaths = matches.reduce((sum, m) => sum + m.deaths, 0);
@@ -186,4 +346,205 @@ export function calculateLolStats(
     totalAssists,
     avgKda,
   };
+}
+
+export function calculateLolChampionStats(
+  matches: LolMatchForDisplay[]
+): ChampionStat[] {
+  const statsByChampion = new Map<number, ChampionStat>();
+
+  matches.forEach((match) => {
+    const entry = statsByChampion.get(match.championId) ?? {
+      championId: match.championId,
+      championName: match.championJa || match.champion,
+      games: 0,
+      wins: 0,
+      losses: 0,
+      winRate: 0,
+      avgKda: "0.00",
+      avgKills: 0,
+      avgDeaths: 0,
+      avgAssists: 0,
+      avgCs: 0,
+      avgDamage: 0,
+    };
+
+    entry.games += 1;
+    if (match.win) {
+      entry.wins += 1;
+    } else {
+      entry.losses += 1;
+    }
+
+    entry.avgKills += match.kills;
+    entry.avgDeaths += match.deaths;
+    entry.avgAssists += match.assists;
+    entry.avgCs += match.cs;
+    entry.avgDamage += match.damage;
+
+    statsByChampion.set(match.championId, entry);
+  });
+
+  return Array.from(statsByChampion.values())
+    .map((stat) => {
+      const games = stat.games;
+      const winRate = games > 0 ? Math.round((stat.wins / games) * 100) : 0;
+
+      return {
+        ...stat,
+        winRate,
+        avgKda: formatKdaAverage(
+          stat.avgKills / games,
+          stat.avgDeaths / games,
+          stat.avgAssists / games
+        ),
+        avgKills: formatAverage(stat.avgKills / games, 1),
+        avgDeaths: formatAverage(stat.avgDeaths / games, 1),
+        avgAssists: formatAverage(stat.avgAssists / games, 1),
+        avgCs: formatAverage(stat.avgCs / games, 1),
+        avgDamage: formatAverage(stat.avgDamage / games, 0),
+      };
+    })
+    .sort((a, b) => {
+      if (b.games !== a.games) {
+        return b.games - a.games;
+      }
+      if (b.winRate !== a.winRate) {
+        return b.winRate - a.winRate;
+      }
+      return a.championName.localeCompare(b.championName);
+    })
+    .slice(0, 5);
+}
+
+export function calculateLolRoleStats(
+  matches: LolMatchForDisplay[]
+): RoleStat[] {
+  const statsByRole = new Map<string, RoleStat>();
+
+  matches.forEach((match) => {
+    const role = getRoleKey(match.teamPosition, match.individualPosition);
+
+    if (!role) {
+      return;
+    }
+
+    const entry = statsByRole.get(role) ?? {
+      role,
+      label: role,
+      games: 0,
+      wins: 0,
+      losses: 0,
+      winRate: 0,
+      avgKda: "0.00",
+    };
+
+    entry.games += 1;
+    if (match.win) {
+      entry.wins += 1;
+    } else {
+      entry.losses += 1;
+    }
+
+    statsByRole.set(role, entry);
+  });
+
+  return Array.from(statsByRole.values())
+    .map((stat) => {
+      const games = stat.games;
+      const winRate = games > 0 ? Math.round((stat.wins / games) * 100) : 0;
+      const totalKills = matches
+        .filter(
+          (match) =>
+            getRoleKey(match.teamPosition, match.individualPosition) ===
+            stat.role
+        )
+        .reduce((sum, match) => sum + match.kills, 0);
+      const totalDeaths = matches
+        .filter(
+          (match) =>
+            getRoleKey(match.teamPosition, match.individualPosition) ===
+            stat.role
+        )
+        .reduce((sum, match) => sum + match.deaths, 0);
+      const totalAssists = matches
+        .filter(
+          (match) =>
+            getRoleKey(match.teamPosition, match.individualPosition) ===
+            stat.role
+        )
+        .reduce((sum, match) => sum + match.assists, 0);
+
+      return {
+        ...stat,
+        winRate,
+        avgKda:
+          totalDeaths === 0
+            ? "Perfect"
+            : ((totalKills + totalAssists) / totalDeaths).toFixed(2),
+      };
+    })
+    .filter((stat) => stat.games > 0)
+    .sort((a, b) => {
+      const aIndex = ["TOP", "JUNGLE", "MIDDLE", "BOTTOM", "UTILITY"].indexOf(
+        a.role
+      );
+      const bIndex = ["TOP", "JUNGLE", "MIDDLE", "BOTTOM", "UTILITY"].indexOf(
+        b.role
+      );
+      return (aIndex === -1 ? 99 : aIndex) - (bIndex === -1 ? 99 : bIndex);
+    });
+}
+
+export function calculateLolPatchStats(
+  matches: LolMatchForDisplay[]
+): PatchStat[] {
+  const statsByPatch = new Map<string, PatchStat>();
+
+  matches.forEach((match) => {
+    const patch = match.patch?.trim() || "Unknown";
+    const entry = statsByPatch.get(patch) ?? {
+      patch,
+      games: 0,
+      wins: 0,
+      losses: 0,
+      winRate: 0,
+      avgKda: "0.00",
+    };
+
+    entry.games += 1;
+    if (match.win) {
+      entry.wins += 1;
+    } else {
+      entry.losses += 1;
+    }
+
+    statsByPatch.set(patch, entry);
+  });
+
+  return Array.from(statsByPatch.values())
+    .map((stat) => {
+      const games = stat.games;
+      const winRate = games > 0 ? Math.round((stat.wins / games) * 100) : 0;
+      const totalKills = matches
+        .filter((match) => (match.patch?.trim() || "Unknown") === stat.patch)
+        .reduce((sum, match) => sum + match.kills, 0);
+      const totalDeaths = matches
+        .filter((match) => (match.patch?.trim() || "Unknown") === stat.patch)
+        .reduce((sum, match) => sum + match.deaths, 0);
+      const totalAssists = matches
+        .filter((match) => (match.patch?.trim() || "Unknown") === stat.patch)
+        .reduce((sum, match) => sum + match.assists, 0);
+
+      return {
+        ...stat,
+        winRate,
+        avgKda:
+          totalDeaths === 0
+            ? "Perfect"
+            : ((totalKills + totalAssists) / totalDeaths).toFixed(2),
+      };
+    })
+    .sort((a, b) => comparePatchVersions(a.patch, b.patch))
+    .slice(0, 5);
 }

@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import type { LolPeriod } from "@/lib/dashboard/lol";
 import { calculateRankScore, formatShortRankWithLp } from "@/lib/rank";
 
 type RankChartData = {
@@ -6,6 +7,30 @@ type RankChartData = {
   score: number;
   label: string;
 };
+
+function isRankSnapshotInPeriod(createdAt: Date, period: LolPeriod): boolean {
+  const now = new Date();
+
+  if (period === "all") {
+    return true;
+  }
+
+  if (period === "recent20") {
+    return true;
+  }
+
+  const cutoff = new Date(now);
+
+  if (period === "7d") {
+    cutoff.setDate(now.getDate() - 7);
+  }
+
+  if (period === "30d") {
+    cutoff.setDate(now.getDate() - 30);
+  }
+
+  return createdAt >= cutoff;
+}
 
 /**
  * LoLランク履歴を取得し、グラフ表示用へ変換する
@@ -31,7 +56,7 @@ export async function getLolRankChartData(): Promise<RankChartData[]> {
 /**
  * 最新LoLランクと前回ランクを取得する
  */
-export async function getLolRankHistory() {
+export async function getLolRankHistory(period: LolPeriod = "recent20") {
   const rankHistory = await prisma.rankSnapshot.findMany({
     orderBy: {
       createdAt: "asc",
@@ -39,9 +64,17 @@ export async function getLolRankHistory() {
     take: 30,
   });
 
+  const filteredHistory = rankHistory.filter((snapshot) =>
+    isRankSnapshotInPeriod(snapshot.createdAt, period)
+  );
+
+  const latestRank = filteredHistory.at(-1);
+  const previousRank = filteredHistory.at(-2);
+
   return {
-    latestRank: rankHistory.at(-1),
-    previousRank: rankHistory.at(-2),
+    latestRank,
+    previousRank,
+    history: filteredHistory,
   };
 }
 
@@ -59,5 +92,25 @@ export function calculateLolRankLpDiff(
   return (
     calculateRankScore(latestRank.tier, latestRank.rank, latestRank.lp) -
     calculateRankScore(previousRank.tier, previousRank.rank, previousRank.lp)
+  );
+}
+
+export function calculateLolRankLpDiffForPeriod(
+  history: Array<{ tier: string; rank: string; lp: number }> | undefined
+): number | undefined {
+  if (!history || history.length < 2) {
+    return undefined;
+  }
+
+  const startRank = history[0];
+  const endRank = history[history.length - 1];
+
+  if (!startRank || !endRank) {
+    return undefined;
+  }
+
+  return (
+    calculateRankScore(endRank.tier, endRank.rank, endRank.lp) -
+    calculateRankScore(startRank.tier, startRank.rank, startRank.lp)
   );
 }

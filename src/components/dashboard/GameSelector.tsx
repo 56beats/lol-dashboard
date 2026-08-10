@@ -4,13 +4,23 @@ import Link from "next/link";
 
 type Props = {
   activeGame: "lol" | "tft";
+  period?: string;
 };
 
-export function GameSelector({ activeGame }: Props) {
+export function GameSelector({ activeGame, period = "recent20" }: Props) {
+  const buildHref = (game: "lol" | "tft") => {
+    const params = new URLSearchParams();
+    params.set("game", game);
+    if (period) {
+      params.set("period", period);
+    }
+    return `/?${params.toString()}`;
+  };
+
   return (
     <div className="mt-6 flex gap-2">
       <Link
-        href="/?game=lol"
+        href={buildHref("lol")}
         className={[
           "rounded-xl px-4 py-2 text-sm font-bold",
           activeGame === "lol"
@@ -22,7 +32,7 @@ export function GameSelector({ activeGame }: Props) {
       </Link>
 
       <Link
-        href="/?game=tft"
+        href={buildHref("tft")}
         className={[
           "rounded-xl px-4 py-2 text-sm font-bold",
           activeGame === "tft"

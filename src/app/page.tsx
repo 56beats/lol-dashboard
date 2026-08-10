@@ -5,15 +5,24 @@ import { RankCard } from "@/components/dashboard/RankCard";
 import { RankChart } from "@/components/dashboard/RankChart";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { TftMatchCard } from "@/components/dashboard/TftMatchCard";
+import { ChampionStats } from "@/components/dashboard/ChampionStats";
+import { PatchStats } from "@/components/dashboard/PatchStats";
+import { RoleStats } from "@/components/dashboard/RoleStats";
+import { LolPeriodFilter } from "@/components/dashboard/LolPeriodFilter";
 import { prisma } from "@/lib/prisma";
 import {
-  getLolMatchesForDisplay,
+  calculateLolChampionStats,
+  calculateLolPatchStats,
+  calculateLolRoleStats,
   calculateLolStats,
+  getLolMatchesForDisplay,
+  getLolPeriodLabel,
+  type LolPeriod,
 } from "@/lib/dashboard/lol";
 import {
   getLolRankChartData,
   getLolRankHistory,
-  calculateLolRankLpDiff,
+  calculateLolRankLpDiffForPeriod,
 } from "@/lib/dashboard/rank";
 import {
   getTftMatchesForDisplay,
@@ -25,14 +34,15 @@ import {
 type Props = {
   searchParams?: Promise<{
     game?: string;
+    period?: string;
   }>;
 };
 
 export default async function Home({ searchParams }: Props) {
   const params = await searchParams;
   const activeGame = params?.game === "tft" ? "tft" : "lol";
+  const period = (params?.period as LolPeriod | undefined) ?? "recent20";
 
-  // 現在のアカウント情報を取得
   const appConfig = await prisma.appConfig.findUnique({
     where: {
       id: "default",
@@ -40,14 +50,15 @@ export default async function Home({ searchParams }: Props) {
   });
   const myPuuid = appConfig?.puuid;
 
-  // === LoL データ取得・変換 ===
-  const lolMatchesForDisplay = await getLolMatchesForDisplay(myPuuid);
+  const lolMatchesForDisplay = await getLolMatchesForDisplay(myPuuid, period);
   const lolStats = calculateLolStats(lolMatchesForDisplay);
-  const { latestRank, previousRank } = await getLolRankHistory();
-  const lpDiff = calculateLolRankLpDiff(latestRank, previousRank);
+  const championStats = calculateLolChampionStats(lolMatchesForDisplay);
+  const roleStats = calculateLolRoleStats(lolMatchesForDisplay);
+  const patchStats = calculateLolPatchStats(lolMatchesForDisplay);
+  const { latestRank, history } = await getLolRankHistory(period);
+  const lpDiff = calculateLolRankLpDiffForPeriod(history);
   const rankChartData = await getLolRankChartData();
 
-  // === TFT データ取得・変換 ===
   const tftMatchesForDisplay = await getTftMatchesForDisplay();
   const tftStats = calculateTftStats(tftMatchesForDisplay);
   const latestTftRank = await getLatestTftRank();
@@ -76,10 +87,17 @@ export default async function Home({ searchParams }: Props) {
           </p>
         </section>
 
-        <GameSelector activeGame={activeGame} />
+        <GameSelector activeGame={activeGame} period={period} />
 
         {activeGame === "lol" ? (
           <>
+            <section className="mt-6 flex flex-wrap items-center justify-between gap-3">
+              <div className="text-muted text-sm">
+                対象期間: {getLolPeriodLabel(period)}
+              </div>
+              <LolPeriodFilter activePeriod={period} />
+            </section>
+
             <section className="mt-6 grid gap-4 md:grid-cols-4">
               <RankCard
                 tier={latestRank?.tier}
@@ -105,8 +123,44 @@ export default async function Home({ searchParams }: Props) {
               <StatCard
                 label="試合数"
                 value={lolMatchesForDisplay.length}
-                subText="最近20試合"
+                subText={getLolPeriodLabel(period)}
               />
+            </section>
+
+            <section className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <div className="border-border bg-surface rounded-2xl border p-5 shadow-lg backdrop-blur">
+                <div className="text-muted mb-3 text-sm">期間LP</div>
+                <div className="text-foreground text-2xl font-bold">
+                  {lpDiff != null
+                    ? `${lpDiff >= 0 ? "+" : ""}${lpDiff} LP`
+                    : "--"}
+                </div>
+                {lpDiff != null && (
+                  <div
+                    className={[
+                      "mt-2 text-sm font-bold",
+                      lpDiff >= 0 ? "text-success" : "text-danger",
+                    ].join(" ")}
+                  >
+                    {lpDiff >= 0 ? "増加" : "減少"}
+                  </div>
+                )}
+              </div>
+              <ChampionStats stats={championStats} />
+              <RoleStats stats={roleStats} />
+            </section>
+
+            <section className="mt-6 grid gap-4 lg:grid-cols-2">
+              <PatchStats stats={patchStats} />
+              <div className="border-border bg-surface rounded-2xl border p-5 shadow-lg backdrop-blur">
+                <div className="text-muted mb-3 text-sm">分析対象期間</div>
+                <div className="text-foreground text-lg font-bold">
+                  {getLolPeriodLabel(period)}
+                </div>
+                <div className="text-muted mt-2 text-sm">
+                  勝率・KDA・チャンピオン・ロール・パッチ・LP増減がこの期間で集計されます
+                </div>
+              </div>
             </section>
 
             <section className="mt-6">
