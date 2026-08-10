@@ -46,8 +46,8 @@ export function TftMatchCard({
       type="button"
       onClick={() => setIsOpen((current) => !current)}
       className={[
-        "w-full rounded-2xl border bg-white/5 p-4 text-left shadow-lg backdrop-blur transition hover:bg-white/10",
-        isTop4 ? "border-emerald-400/30" : "border-rose-400/30",
+        "bg-surface hover:bg-surface-subtle w-full rounded-2xl border p-4 text-left shadow-lg backdrop-blur transition",
+        isTop4 ? "border-success" : "border-danger",
       ].join(" ")}
     >
       <div className="flex items-start justify-between gap-4">
@@ -55,20 +55,18 @@ export function TftMatchCard({
           <div
             className={[
               "text-2xl font-bold",
-              isTop4 ? "text-emerald-300" : "text-rose-300",
+              isTop4 ? "text-success" : "text-danger",
             ].join(" ")}
           >
             {placement}位
           </div>
 
-          <div className="mt-1 text-sm text-slate-400">
+          <div className="text-muted mt-1 text-sm">
             Lv.{level} / {playedAt.toLocaleDateString("ja-JP")}
           </div>
         </div>
 
-        <div className="text-sm text-slate-400">
-          {isOpen ? "閉じる" : "詳細"}
-        </div>
+        <div className="text-muted text-sm">{isOpen ? "閉じる" : "詳細"}</div>
       </div>
 
       <div className="mt-4 flex flex-wrap gap-2">
@@ -112,17 +110,13 @@ export function TftMatchCard({
             ) : (
               <TftSpriteIcon sprite={unit.sprite} alt={unit.name} size={48} />
             )}
-            <span className="text-xs text-slate-300">★{unit.tier}</span>
+            <span className="text-muted text-xs">★{unit.tier}</span>
           </div>
         ))}
       </div>
 
       {isOpen && (
-        <TftMatchCardDetail
-          augments={augments}
-          traits={traits}
-          units={units}
-        />
+        <TftMatchCardDetail augments={augments} traits={traits} units={units} />
       )}
     </button>
   );

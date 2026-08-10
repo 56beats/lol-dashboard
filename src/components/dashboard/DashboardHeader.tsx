@@ -20,9 +20,9 @@ export function DashboardHeader({
   const isTft = activeGame === "tft";
 
   return (
-    <header className="border-b border-white/10 bg-slate-950/80 px-6 py-5 backdrop-blur">
+    <header className="border-border bg-surface border-b px-6 py-5 backdrop-blur">
       <div className="mx-auto flex max-w-6xl flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="text-xl font-bold text-white">LOL DASHBOARD</div>
+        <div className="text-foreground text-xl font-bold">LOL DASHBOARD</div>
 
         <SyncControls
           game={activeGame}

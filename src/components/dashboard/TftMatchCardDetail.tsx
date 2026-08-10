@@ -26,14 +26,14 @@ export function TftMatchCardDetail({
   units,
 }: TftMatchCardDetailProps) {
   return (
-    <div className="mt-5 space-y-5 border-t border-white/10 pt-5">
+    <div className="border-border mt-5 space-y-5 border-t pt-5">
       <div>
-        <div className="text-xs font-bold text-slate-400">オーグメント</div>
+        <div className="text-muted text-xs font-bold">オーグメント</div>
         <div className="mt-2 flex flex-wrap gap-2">
           {augments.map((augment) => (
             <div
               key={augment.id}
-              className="flex items-center gap-2 rounded-lg bg-white/10 px-2 py-1"
+              className="bg-surface-subtle flex items-center gap-2 rounded-lg px-2 py-1"
             >
               {augment.imageUrl && (
                 <Image
@@ -44,19 +44,19 @@ export function TftMatchCardDetail({
                   className="rounded"
                 />
               )}
-              <span className="text-xs text-slate-200">{augment.name}</span>
+              <span className="text-foreground text-xs">{augment.name}</span>
             </div>
           ))}
         </div>
       </div>
 
       <div>
-        <div className="text-xs font-bold text-slate-400">全ユニット</div>
+        <div className="text-muted text-xs font-bold">全ユニット</div>
         <div className="mt-2 space-y-2">
           {units.map((unit) => (
             <div
               key={unit.id}
-              className="flex items-center justify-between rounded-xl bg-white/10 px-3 py-2"
+              className="bg-surface-subtle flex items-center justify-between rounded-xl px-3 py-2"
             >
               <div className="flex items-center gap-2">
                 {/* CommunityDragonの個別画像がある場合はそちらを優先して表示する */}
@@ -75,7 +75,7 @@ export function TftMatchCardDetail({
                   />
                 )}
                 <div>
-                  <div className="text-sm font-bold text-white">
+                  <div className="text-foreground text-sm font-bold">
                     ★{unit.tier} {unit.name}
                   </div>
                 </div>
@@ -102,7 +102,7 @@ export function TftMatchCardDetail({
                   ) : (
                     <span
                       key={item.id}
-                      className="rounded bg-black/30 px-2 py-1 text-xs text-slate-300"
+                      className="bg-surface text-muted rounded px-2 py-1 text-xs"
                     >
                       {item.name}
                     </span>
@@ -115,7 +115,7 @@ export function TftMatchCardDetail({
       </div>
 
       <div>
-        <div className="text-xs font-bold text-slate-400">全特性</div>
+        <div className="text-muted text-xs font-bold">全特性</div>
         <div className="mt-2 flex flex-wrap gap-2">
           {traits.map((trait) => (
             <span

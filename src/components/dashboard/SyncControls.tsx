@@ -132,10 +132,7 @@ export function SyncControls({ game, lastMatchSync, lastRankSync }: Props) {
             onClick={() => handleSync("matches")}
             disabled={isSyncing}
             className={[
-              "rounded-xl px-4 py-2 text-sm font-bold text-white transition",
-              isTft
-                ? "bg-purple-600 hover:bg-purple-500"
-                : "bg-blue-600 hover:bg-blue-500",
+              "bg-primary text-surface hover:bg-primary-hover rounded-xl px-4 py-2 text-sm font-bold transition",
               "disabled:cursor-not-allowed disabled:opacity-50",
             ].join(" ")}
           >
@@ -144,7 +141,7 @@ export function SyncControls({ game, lastMatchSync, lastRankSync }: Props) {
               : `${gameLabel}試合同期`}
           </button>
 
-          <div className="mt-1 text-right text-[11px] text-slate-500">
+          <div className="text-muted mt-1 text-right text-[11px]">
             最終：{formatSyncDate(lastMatchSync)}
           </div>
         </div>
@@ -154,12 +151,12 @@ export function SyncControls({ game, lastMatchSync, lastRankSync }: Props) {
             type="button"
             onClick={() => handleSync("rank")}
             disabled={isSyncing}
-            className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
+            className="bg-primary text-surface hover:bg-primary-hover rounded-xl px-4 py-2 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-50"
           >
             {syncState.type === "rank" ? "同期中..." : `${gameLabel} LP同期`}
           </button>
 
-          <div className="mt-1 text-right text-[11px] text-slate-500">
+          <div className="text-muted mt-1 text-right text-[11px]">
             最終：{formatSyncDate(lastRankSync)}
           </div>
         </div>
@@ -171,7 +168,7 @@ export function SyncControls({ game, lastMatchSync, lastRankSync }: Props) {
           aria-live="polite"
           className={[
             "text-xs",
-            syncState.isError ? "text-rose-300" : "text-emerald-300",
+            syncState.isError ? "text-danger" : "text-success",
           ].join(" ")}
         >
           {syncState.message}

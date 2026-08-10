@@ -17,7 +17,7 @@ export function TftSpriteIcon({ sprite, alt, size = 48 }: Props) {
     return (
       <div
         aria-label={alt}
-        className="rounded-xl border border-white/10 bg-white/10"
+        className="border-border bg-surface-subtle rounded-xl border"
         style={{ width: size, height: size }}
       />
     );
@@ -30,7 +30,7 @@ export function TftSpriteIcon({ sprite, alt, size = 48 }: Props) {
     <div
       aria-label={alt}
       title={alt}
-      className="overflow-hidden rounded-xl border border-white/10 bg-black/20 bg-no-repeat"
+      className="border-border bg-surface-subtle overflow-hidden rounded-xl border bg-no-repeat"
       style={{
         width: size,
         height: size,

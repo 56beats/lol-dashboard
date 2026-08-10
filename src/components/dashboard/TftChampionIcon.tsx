@@ -35,7 +35,7 @@ export function TftChampionIcon({
     return (
       <div
         aria-label={name}
-        className="rounded-md border border-white/10 bg-white/10"
+        className="border-border bg-surface-subtle rounded-md border"
         style={{ width: size, height: size }}
       />
     );
@@ -48,7 +48,7 @@ export function TftChampionIcon({
     return (
       <div
         aria-label={name}
-        className="rounded-md border border-white/10 bg-white/10"
+        className="border-border bg-surface-subtle rounded-md border"
         style={{ width: size, height: size }}
       />
     );

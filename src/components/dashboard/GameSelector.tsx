@@ -14,8 +14,8 @@ export function GameSelector({ activeGame }: Props) {
         className={[
           "rounded-xl px-4 py-2 text-sm font-bold",
           activeGame === "lol"
-            ? "bg-blue-600 text-white"
-            : "bg-white/10 text-slate-300 hover:bg-white/20",
+            ? "bg-primary text-surface"
+            : "bg-surface-subtle text-muted hover:bg-primary-light",
         ].join(" ")}
       >
         LoL
@@ -26,8 +26,8 @@ export function GameSelector({ activeGame }: Props) {
         className={[
           "rounded-xl px-4 py-2 text-sm font-bold",
           activeGame === "tft"
-            ? "bg-emerald-600 text-white"
-            : "bg-white/10 text-slate-300 hover:bg-white/20",
+            ? "bg-primary text-surface"
+            : "bg-surface-subtle text-muted hover:bg-primary-light",
         ].join(" ")}
       >
         TFT

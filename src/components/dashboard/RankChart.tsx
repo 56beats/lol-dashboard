@@ -5,7 +5,6 @@ import {
   Line,
   LineChart,
   ResponsiveContainer,
-  Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
@@ -26,12 +25,10 @@ type Props = {
  */
 export function RankChart({ data }: Props) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-5 shadow-lg backdrop-blur">
+    <div className="border-border bg-surface rounded-2xl border p-5 shadow-lg backdrop-blur">
       <div className="mb-4">
-        <h2 className="text-xl font-bold text-white">LP推移</h2>
-        <p className="mt-1 text-sm text-slate-400">
-          ランク昇格も考慮したLP推移
-        </p>
+        <h2 className="text-foreground text-xl font-bold">LP推移</h2>
+        <p className="text-muted mt-1 text-sm">ランク昇格も考慮したLP推移</p>
       </div>
 
       <div className="h-72">
@@ -40,25 +37,21 @@ export function RankChart({ data }: Props) {
             data={data}
             margin={{ top: 32, right: 24, bottom: 8, left: 24 }}
           >
-            <XAxis dataKey="date" stroke="#94a3b8" fontSize={12} />
+            <XAxis dataKey="date" stroke="var(--muted)" fontSize={12} />
             <YAxis hide />
-
-            <Tooltip
-              formatter={(_, __, item) => item.payload.label}
-              labelFormatter={(label) => `${label}`}
-            />
 
             <Line
               type="monotone"
               dataKey="score"
-              stroke="#34d399"
+              stroke="var(--primary)"
               strokeWidth={3}
               dot={{ r: 5 }}
             >
               <LabelList
                 dataKey="label"
                 position="top"
-                fill="#e2e8f0"
+                offset={8}
+                fill="var(--foreground)"
                 fontSize={12}
               />
             </Line>

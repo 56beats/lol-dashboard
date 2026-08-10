@@ -74,11 +74,11 @@ export function MatchDetailTable({
       : 0;
 
   return (
-    <div className="mt-5 border-t border-white/10 pt-5">
+    <div className="border-border mt-5 border-t pt-5">
       <div className="grid gap-4 md:grid-cols-2">
         {[100, 200].map((teamId) => (
           <div key={teamId} className="space-y-2">
-            <div className="text-xs font-bold text-slate-400">
+            <div className="text-muted text-xs font-bold">
               {teamId === 100 ? "Blue Team" : "Red Team"}
             </div>
 
@@ -100,8 +100,8 @@ export function MatchDetailTable({
                     className={[
                       "rounded-xl border px-3 py-2",
                       participant.isMe
-                        ? "border-sky-400/70 bg-sky-500/15"
-                        : "border-white/5 bg-black/20",
+                        ? "border-primary bg-primary-light"
+                        : "border-border bg-surface-subtle",
                     ].join(" ")}
                   >
                     <div className="flex items-center justify-between gap-3">
@@ -112,36 +112,36 @@ export function MatchDetailTable({
                             alt={participant.championJa}
                             width={36}
                             height={36}
-                            className="rounded-full border border-white/10"
+                            className="border-border rounded-full border"
                           />
                         )}
 
                         <div className="min-w-0">
-                          <div className="truncate text-sm font-bold text-white">
+                          <div className="text-foreground truncate text-sm font-bold">
                             {participant.riotIdGameName ?? "Unknown"}
                             {participant.isMe && (
-                              <span className="ml-1 text-xs text-sky-300">
+                              <span className="text-primary ml-1 text-xs">
                                 You
                               </span>
                             )}
                           </div>
 
-                          <div className="text-xs text-slate-400">
+                          <div className="text-muted text-xs">
                             {participant.championJa}
                           </div>
                         </div>
                       </div>
 
-                      <div className="text-right text-xs text-slate-300">
+                      <div className="text-muted text-right text-xs">
                         <div className="font-bold">
                           {participant.kills} /{" "}
-                          <span className="text-rose-300">
+                          <span className="text-danger">
                             {participant.deaths}
                           </span>{" "}
                           / {participant.assists}
                         </div>
 
-                        <div className="text-slate-500">
+                        <div className="text-muted">
                           CS {cs} / 視界 {participant.visionScore ?? "-"}
                         </div>
                       </div>
@@ -168,7 +168,7 @@ export function MatchDetailTable({
                                 alt={`spell-${spellId}`}
                                 width={22}
                                 height={22}
-                                className="rounded border border-white/10"
+                                className="border-border rounded border"
                               />
                             );
                           })}
@@ -183,7 +183,7 @@ export function MatchDetailTable({
                               alt={`item-${itemId}`}
                               width={22}
                               height={22}
-                              className="rounded border border-white/10"
+                              className="border-border rounded border"
                             />
                           )
                         )}
@@ -191,16 +191,16 @@ export function MatchDetailTable({
                     </div>
 
                     <div className="mt-2">
-                      <div className="flex items-center justify-between text-[11px] text-slate-500">
+                      <div className="text-muted flex items-center justify-between text-[11px]">
                         <span>DMG</span>
                         <span>{formatNumber(damage)}</span>
                       </div>
 
-                      <div className="mt-1 h-1.5 rounded-full bg-white/10">
+                      <div className="bg-surface-subtle mt-1 h-1.5 rounded-full">
                         <div
                           className={[
                             "h-1.5 rounded-full",
-                            participant.isMe ? "bg-sky-400" : "bg-slate-500",
+                            participant.isMe ? "bg-primary" : "bg-muted",
                           ].join(" ")}
                           style={{ width: `${damagePercent}%` }}
                         />

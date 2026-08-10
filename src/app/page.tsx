@@ -54,7 +54,7 @@ export default async function Home({ searchParams }: Props) {
   const tftRankChartData = await getTftRankChartData();
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top,#1e3a8a_0,#020617_45%,#020617_100%)] text-white">
+    <main className="bg-background text-foreground min-h-screen">
       <DashboardHeader
         activeGame={activeGame}
         lastLolMatchSync={appConfig?.lastMatchSync}
@@ -64,14 +64,14 @@ export default async function Home({ searchParams }: Props) {
       />
 
       <div className="mx-auto max-w-6xl px-6 py-10">
-        <section className="rounded-3xl border border-white/10 bg-white/5 p-8 shadow-2xl backdrop-blur">
-          <div className="text-sm text-slate-400">Riot ID</div>
+        <section className="border-border bg-surface rounded-3xl border p-8 shadow-2xl backdrop-blur">
+          <div className="text-muted text-sm">Riot ID</div>
           <h1 className="mt-2 text-4xl font-bold">
             {appConfig
               ? `${appConfig.riotGameName}#${appConfig.riotTagLine}`
               : "Riot ID未同期"}
           </h1>
-          <p className="mt-3 text-sm text-slate-400">
+          <p className="text-muted mt-3 text-sm">
             データはRiot Games APIから取得しています
           </p>
         </section>
