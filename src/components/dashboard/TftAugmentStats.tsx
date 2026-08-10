@@ -23,8 +23,8 @@ export function TftAugmentStats({ stats }: Props) {
             key={stat.augmentId}
             className="border-border/60 rounded-xl border p-3"
           >
-            <div className="flex items-center justify-between gap-2">
-              <div className="text-foreground font-bold">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="text-foreground font-bold break-words">
                 {stat.augmentName}
               </div>
               <div className="text-muted text-sm">{stat.games}試合</div>

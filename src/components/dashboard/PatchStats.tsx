@@ -23,7 +23,7 @@ export function PatchStats({ stats }: Props) {
             key={stat.patch}
             className="border-border/60 rounded-xl border p-3"
           >
-            <div className="flex items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="text-foreground font-bold">{stat.patch}</div>
               <div className="text-muted text-sm">{stat.games}試合</div>
             </div>

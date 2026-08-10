@@ -31,7 +31,7 @@ export function RoleStats({ stats }: Props) {
             key={stat.role}
             className="border-border/60 rounded-xl border p-3"
           >
-            <div className="flex items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="text-foreground font-bold">
                 {roleLabels[stat.role] ?? stat.role}
               </div>

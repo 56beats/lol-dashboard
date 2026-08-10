@@ -23,8 +23,10 @@ export function TftUnitStats({ stats }: Props) {
             key={stat.unitId}
             className="border-border/60 rounded-xl border p-3"
           >
-            <div className="flex items-center justify-between gap-2">
-              <div className="text-foreground font-bold">{stat.unitName}</div>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="text-foreground font-bold break-words">
+                {stat.unitName}
+              </div>
               <div className="text-muted text-sm">{stat.games}試合</div>
             </div>
             <div className="text-muted mt-2 flex flex-wrap gap-3 text-sm">

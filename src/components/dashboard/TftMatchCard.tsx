@@ -46,15 +46,15 @@ export function TftMatchCard({
       type="button"
       onClick={() => setIsOpen((current) => !current)}
       className={[
-        "bg-surface hover:bg-surface-subtle w-full rounded-2xl border p-4 text-left shadow-lg backdrop-blur transition",
+        "bg-surface hover:bg-surface-subtle w-full rounded-2xl border p-3 text-left shadow-lg backdrop-blur transition sm:p-4",
         isTop4 ? "border-success" : "border-danger",
       ].join(" ")}
     >
-      <div className="flex items-start justify-between gap-4">
-        <div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+        <div className="min-w-0">
           <div
             className={[
-              "text-2xl font-bold",
+              "text-xl font-bold sm:text-2xl",
               isTop4 ? "text-success" : "text-danger",
             ].join(" ")}
           >
@@ -98,7 +98,7 @@ export function TftMatchCard({
 
       <div className="mt-4 flex flex-wrap gap-2">
         {mainUnits.map((unit) => (
-          <div key={unit.id} className="flex items-center gap-1">
+          <div key={unit.id} className="flex min-w-0 items-center gap-1">
             {/* CommunityDragonの個別画像がある場合はそちらを優先して表示する */}
             {unit.imageUrl ? (
               <TftChampionIcon
@@ -110,7 +110,9 @@ export function TftMatchCard({
             ) : (
               <TftSpriteIcon sprite={unit.sprite} alt={unit.name} size={48} />
             )}
-            <span className="text-muted text-xs">★{unit.tier}</span>
+            <span className="text-muted text-xs whitespace-nowrap">
+              ★{unit.tier}
+            </span>
           </div>
         ))}
       </div>

@@ -104,7 +104,7 @@ export function MatchDetailTable({
                         : "border-border bg-surface-subtle",
                     ].join(" ")}
                   >
-                    <div className="flex items-center justify-between gap-3">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
                       <div className="flex min-w-0 items-center gap-2">
                         {participant.championImageUrl && (
                           <Image
@@ -132,7 +132,7 @@ export function MatchDetailTable({
                         </div>
                       </div>
 
-                      <div className="text-muted text-right text-xs">
+                      <div className="text-muted text-left text-xs sm:text-right">
                         <div className="font-bold">
                           {participant.kills} /{" "}
                           <span className="text-danger">
@@ -147,8 +147,8 @@ export function MatchDetailTable({
                       </div>
                     </div>
 
-                    <div className="mt-2 flex items-center justify-between gap-2">
-                      <div className="flex gap-1">
+                    <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex flex-wrap gap-1">
                         {[participant.summoner1Id, participant.summoner2Id]
                           .filter((spellId): spellId is number => !!spellId)
                           .map((spellId) => {
@@ -174,7 +174,7 @@ export function MatchDetailTable({
                           })}
                       </div>
 
-                      <div className="flex gap-1">
+                      <div className="flex flex-wrap gap-1">
                         {filterItemIds(participant.itemIds).map(
                           (itemId, index) => (
                             <Image

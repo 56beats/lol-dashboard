@@ -18,11 +18,11 @@ export function GameSelector({ activeGame, period = "recent20" }: Props) {
   };
 
   return (
-    <div className="mt-6 flex gap-2">
+    <div className="mt-6 grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto">
       <Link
         href={buildHref("lol")}
         className={[
-          "rounded-xl px-4 py-2 text-sm font-bold",
+          "flex min-h-11 items-center justify-center rounded-xl px-4 py-2 text-sm font-bold",
           activeGame === "lol"
             ? "bg-primary text-surface"
             : "bg-surface-subtle text-muted hover:bg-primary-light",

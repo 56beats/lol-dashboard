@@ -93,10 +93,10 @@ export default async function Home({ searchParams }: Props) {
         lastTftRankSync={appConfig?.lastTftRankSync}
       />
 
-      <div className="mx-auto max-w-6xl px-6 py-10">
-        <section className="border-border bg-surface rounded-3xl border p-8 shadow-2xl backdrop-blur">
+      <div className="mx-auto max-w-6xl px-3 py-5 sm:px-4 md:px-6 md:py-10">
+        <section className="border-border bg-surface rounded-3xl border p-4 shadow-2xl backdrop-blur md:p-8">
           <div className="text-muted text-sm">Riot ID</div>
-          <h1 className="mt-2 text-4xl font-bold">
+          <h1 className="mt-2 text-2xl font-bold sm:text-3xl md:text-4xl">
             {appConfig
               ? `${appConfig.riotGameName}#${appConfig.riotTagLine}`
               : "Riot ID未同期"}
@@ -110,22 +110,24 @@ export default async function Home({ searchParams }: Props) {
 
         {activeGame === "lol" ? (
           <>
-            <section className="mt-6 flex flex-wrap items-center justify-between gap-3">
+            <section className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="text-muted text-sm">
                 対象期間: {getLolPeriodLabel(period)}
               </div>
               <LolPeriodFilter activePeriod={period} />
             </section>
 
-            <section className="mt-6 grid gap-4 md:grid-cols-4">
-              <RankCard
-                tier={latestRank?.tier}
-                rank={latestRank?.rank}
-                lp={latestRank?.lp}
-                wins={latestRank?.wins}
-                losses={latestRank?.losses}
-                lpDiff={lpDiff}
-              />
+            <section className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
+              <div className="sm:col-span-2 md:col-span-1">
+                <RankCard
+                  tier={latestRank?.tier}
+                  rank={latestRank?.rank}
+                  lp={latestRank?.lp}
+                  wins={latestRank?.wins}
+                  losses={latestRank?.losses}
+                  lpDiff={lpDiff}
+                />
+              </div>
 
               <StatCard
                 label="勝率"
@@ -146,7 +148,7 @@ export default async function Home({ searchParams }: Props) {
               />
             </section>
 
-            <section className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <section className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
               <div className="border-border bg-surface rounded-2xl border p-5 shadow-lg backdrop-blur">
                 <div className="text-muted mb-3 text-sm">期間LP</div>
                 <div className="text-foreground text-2xl font-bold">
@@ -191,7 +193,7 @@ export default async function Home({ searchParams }: Props) {
             </section>
 
             <section className="mt-10">
-              <h2 className="text-2xl font-bold">最近の試合</h2>
+              <h2 className="text-xl font-bold sm:text-2xl">最近の試合</h2>
 
               <div className="mt-4 space-y-3">
                 {lolMatchesForDisplay.map((match) => (
@@ -216,21 +218,23 @@ export default async function Home({ searchParams }: Props) {
           </>
         ) : (
           <>
-            <section className="mt-6 flex flex-wrap items-center justify-between gap-3">
+            <section className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="text-muted text-sm">
                 対象期間: {getTftPeriodLabel(period)}
               </div>
               <LolPeriodFilter activePeriod={period} />
             </section>
 
-            <section className="mt-6 grid gap-4 md:grid-cols-4">
-              <RankCard
-                tier={latestTftRank?.tier}
-                rank={latestTftRank?.rank}
-                lp={latestTftRank?.lp}
-                wins={latestTftRank?.wins}
-                losses={latestTftRank?.losses}
-              />
+            <section className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
+              <div className="sm:col-span-2 md:col-span-1">
+                <RankCard
+                  tier={latestTftRank?.tier}
+                  rank={latestTftRank?.rank}
+                  lp={latestTftRank?.lp}
+                  wins={latestTftRank?.wins}
+                  losses={latestTftRank?.losses}
+                />
+              </div>
 
               <StatCard
                 label="平均順位"
@@ -251,7 +255,7 @@ export default async function Home({ searchParams }: Props) {
               />
             </section>
 
-            <section className="mt-6 grid gap-4 lg:grid-cols-2">
+            <section className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
               <TftTraitStats stats={tftTraitStats} />
               <TftUnitStats stats={tftUnitStats} />
             </section>
@@ -270,7 +274,7 @@ export default async function Home({ searchParams }: Props) {
             </section>
 
             <section className="mt-10">
-              <h2 className="text-2xl font-bold">最近のTFT試合</h2>
+              <h2 className="text-xl font-bold sm:text-2xl">最近のTFT試合</h2>
 
               <div className="mt-4 space-y-3">
                 {tftMatchesForDisplay.map((match) => (

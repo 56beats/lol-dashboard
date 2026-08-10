@@ -23,8 +23,10 @@ export function TftTraitStats({ stats }: Props) {
             key={stat.traitId}
             className="border-border/60 rounded-xl border p-3"
           >
-            <div className="flex items-center justify-between gap-2">
-              <div className="text-foreground font-bold">{stat.traitName}</div>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="text-foreground font-bold break-words">
+                {stat.traitName}
+              </div>
               <div className="text-muted text-sm">{stat.games}試合</div>
             </div>
             <div className="text-muted mt-2 flex flex-wrap gap-3 text-sm">

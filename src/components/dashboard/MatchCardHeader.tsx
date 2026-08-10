@@ -50,12 +50,12 @@ export function MatchCardHeader({
     <div
       onClick={onToggle}
       className={[
-        "bg-surface hover:bg-surface-subtle cursor-pointer rounded-2xl border p-4 shadow-lg backdrop-blur transition",
+        "bg-surface hover:bg-surface-subtle cursor-pointer rounded-2xl border p-3 shadow-lg backdrop-blur transition sm:p-4",
         win ? "border-success" : "border-danger",
       ].join(" ")}
     >
-      <div className="flex items-center gap-4">
-        <div className="w-16 text-sm font-bold">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+        <div className="flex items-center gap-3 sm:w-16 sm:flex-col sm:items-start sm:gap-1">
           <div className={win ? "text-success" : "text-danger"}>
             {win ? "勝利" : "敗北"}
           </div>
@@ -70,16 +70,16 @@ export function MatchCardHeader({
           alt={championJa ?? champion}
           width={56}
           height={56}
-          className="border-border rounded-full border"
+          className="border-border h-14 w-14 rounded-full border sm:h-14 sm:w-14"
         />
 
-        <div className="min-w-32 flex-1">
-          <div className="text-foreground font-bold">
+        <div className="min-w-0 flex-1">
+          <div className="text-foreground font-bold break-words">
             {championJa ?? champion}
           </div>
           <div className="text-muted text-xs">{queueLabel}</div>
 
-          <div className="mt-2 flex gap-1">
+          <div className="mt-2 flex flex-wrap gap-1">
             {displayItems.map((itemId, index) => (
               <Image
                 key={`${itemId}-${index}`}
@@ -93,8 +93,8 @@ export function MatchCardHeader({
           </div>
         </div>
 
-        <div className="text-right">
-          <div className="text-foreground text-lg font-bold">
+        <div className="text-left sm:text-right">
+          <div className="text-foreground text-base font-bold sm:text-lg">
             {kills} / <span className="text-danger">{deaths}</span> / {assists}
           </div>
 

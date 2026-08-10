@@ -31,11 +31,11 @@ export function RankChart({ data }: Props) {
         <p className="text-muted mt-1 text-sm">ランク昇格も考慮したLP推移</p>
       </div>
 
-      <div className="h-72">
+      <div className="h-64 min-w-0 sm:h-72">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
             data={data}
-            margin={{ top: 32, right: 24, bottom: 8, left: 24 }}
+            margin={{ top: 24, right: 8, bottom: 8, left: 8 }}
           >
             <XAxis dataKey="date" stroke="var(--muted)" fontSize={12} />
             <YAxis hide />
@@ -52,7 +52,7 @@ export function RankChart({ data }: Props) {
                 position="top"
                 offset={8}
                 fill="var(--foreground)"
-                fontSize={12}
+                fontSize={10}
               />
             </Line>
           </LineChart>

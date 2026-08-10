@@ -51,7 +51,7 @@ export function PatchComparison({ comparison }: Props) {
   return (
     <div className="border-border bg-surface rounded-2xl border p-5 shadow-lg backdrop-blur">
       <div className="text-muted mb-3 text-sm">パッチ比較</div>
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div className="border-border/60 rounded-xl border p-3">
           <div className="text-foreground font-bold">
             {comparison.latest.patch}
@@ -94,7 +94,7 @@ export function PatchComparison({ comparison }: Props) {
         </div>
       </div>
       <div className="mt-4 space-y-2 text-sm">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <span className="text-muted">勝率</span>
           <span
             className={[

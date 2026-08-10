@@ -124,15 +124,15 @@ export function SyncControls({ game, lastMatchSync, lastRankSync }: Props) {
   }
 
   return (
-    <div className="flex flex-col items-end gap-2">
-      <div className="flex flex-wrap justify-end gap-2">
-        <div>
+    <div className="flex w-full flex-col gap-2 sm:items-end">
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
+        <div className="w-full sm:w-auto">
           <button
             type="button"
             onClick={() => handleSync("matches")}
             disabled={isSyncing}
             className={[
-              "bg-primary text-surface hover:bg-primary-hover rounded-xl px-4 py-2 text-sm font-bold transition",
+              "bg-primary text-surface hover:bg-primary-hover min-h-11 w-full rounded-xl px-4 py-2 text-sm font-bold transition sm:w-auto",
               "disabled:cursor-not-allowed disabled:opacity-50",
             ].join(" ")}
           >
@@ -151,7 +151,7 @@ export function SyncControls({ game, lastMatchSync, lastRankSync }: Props) {
             type="button"
             onClick={() => handleSync("rank")}
             disabled={isSyncing}
-            className="bg-primary text-surface hover:bg-primary-hover rounded-xl px-4 py-2 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-50"
+            className="bg-primary text-surface hover:bg-primary-hover min-h-11 w-full rounded-xl px-4 py-2 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
           >
             {syncState.type === "rank" ? "同期中..." : `${gameLabel} LP同期`}
           </button>

@@ -20,7 +20,7 @@ export function LolPeriodFilter({ activePeriod }: Props) {
   const searchParams = useSearchParams();
 
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap">
       {periods.map((period) => {
         const params = new URLSearchParams(searchParams.toString());
         params.set("period", period.value);
@@ -32,7 +32,7 @@ export function LolPeriodFilter({ activePeriod }: Props) {
             key={period.value}
             href={href}
             className={[
-              "rounded-xl px-3 py-2 text-sm font-bold",
+              "flex min-h-11 items-center justify-center rounded-xl px-3 py-2 text-sm font-bold",
               isActive
                 ? "bg-primary text-surface"
                 : "bg-surface-subtle text-muted hover:bg-primary-light",
