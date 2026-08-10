@@ -19,12 +19,17 @@ export function TftAugmentStats({ stats }: Props) {
       <div className="text-muted mb-3 text-sm">Augment別統計</div>
       <div className="space-y-3">
         {stats.map((stat) => (
-          <div key={stat.augmentId} className="rounded-xl border border-border/60 p-3">
+          <div
+            key={stat.augmentId}
+            className="border-border/60 rounded-xl border p-3"
+          >
             <div className="flex items-center justify-between gap-2">
-              <div className="text-foreground font-bold">{stat.augmentName}</div>
+              <div className="text-foreground font-bold">
+                {stat.augmentName}
+              </div>
               <div className="text-muted text-sm">{stat.games}試合</div>
             </div>
-            <div className="mt-2 flex flex-wrap gap-3 text-sm text-muted">
+            <div className="text-muted mt-2 flex flex-wrap gap-3 text-sm">
               <span>平均順位 {stat.averagePlacement}</span>
               <span>Top4 {stat.top4Rate}%</span>
               <span>1位 {stat.firstRate}%</span>

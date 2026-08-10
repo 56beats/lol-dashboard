@@ -577,11 +577,23 @@ export function calculateLolPatchComparison(
     patchMatches: LolMatchForDisplay[]
   ): PatchComparisonStat => {
     const games = patchMatches.length;
-    const totalKills = patchMatches.reduce((sum, match) => sum + match.kills, 0);
-    const totalDeaths = patchMatches.reduce((sum, match) => sum + match.deaths, 0);
-    const totalAssists = patchMatches.reduce((sum, match) => sum + match.assists, 0);
+    const totalKills = patchMatches.reduce(
+      (sum, match) => sum + match.kills,
+      0
+    );
+    const totalDeaths = patchMatches.reduce(
+      (sum, match) => sum + match.deaths,
+      0
+    );
+    const totalAssists = patchMatches.reduce(
+      (sum, match) => sum + match.assists,
+      0
+    );
     const totalCs = patchMatches.reduce((sum, match) => sum + match.cs, 0);
-    const totalDamage = patchMatches.reduce((sum, match) => sum + match.damage, 0);
+    const totalDamage = patchMatches.reduce(
+      (sum, match) => sum + match.damage,
+      0
+    );
     const totalVisionScore = patchMatches.reduce(
       (sum, match) => sum + match.visionScore,
       0
@@ -590,7 +602,12 @@ export function calculateLolPatchComparison(
     return {
       patch,
       games,
-      winRate: games > 0 ? Math.round((patchMatches.filter((match) => match.win).length / games) * 100) : 0,
+      winRate:
+        games > 0
+          ? Math.round(
+              (patchMatches.filter((match) => match.win).length / games) * 100
+            )
+          : 0,
       avgKda:
         totalDeaths === 0
           ? "Perfect"

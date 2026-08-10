@@ -176,7 +176,10 @@ export async function getTftMatchesForDisplay(
     tftDisplayMaps = await getTftDisplayMaps();
   } catch (error) {
     // エラーを握りつぶさずサーバーログへ出力する（調査可能にするため）
-    console.error("[TFTダッシュボード] DDragon取得失敗（空マップで継続）:", error instanceof Error ? error.message : "Unknown");
+    console.error(
+      "[TFTダッシュボード] DDragon取得失敗（空マップで継続）:",
+      error instanceof Error ? error.message : "Unknown"
+    );
     tftDisplayMaps = { champions: {}, traits: {}, augments: {}, items: {} };
   }
 
@@ -219,7 +222,8 @@ export async function getTftMatchesForDisplay(
       // DBの ddragonImageUrl が優先。なければDDragonマップのURLを使う
       const fallbackImageUrl =
         dbChampion !== undefined
-          ? (dbChampion.ddragonImageUrl ?? tftDisplayMaps.champions[unit.id]?.imageUrl)
+          ? (dbChampion.ddragonImageUrl ??
+            tftDisplayMaps.champions[unit.id]?.imageUrl)
           : undefined;
 
       return {
@@ -244,9 +248,7 @@ export async function getTftMatchesForDisplay(
 /**
  * TFTマッチデータから集計統計を計算する
  */
-export function calculateTftStats(
-  matches: TftMatchForDisplay[]
-): TftStats {
+export function calculateTftStats(matches: TftMatchForDisplay[]): TftStats {
   const averagePlacement =
     matches.length > 0
       ? (
@@ -266,7 +268,9 @@ export function calculateTftStats(
   };
 }
 
-export function calculateTftTraitStats(matches: TftMatchForDisplay[]): TftTraitStat[] {
+export function calculateTftTraitStats(
+  matches: TftMatchForDisplay[]
+): TftTraitStat[] {
   const statsByTrait = new Map<string, TftTraitStat>();
 
   matches.forEach((match) => {
@@ -306,7 +310,8 @@ export function calculateTftTraitStats(matches: TftMatchForDisplay[]): TftTraitS
       const games = stat.games;
       return {
         ...stat,
-        averagePlacement: games > 0 ? Number((stat.averagePlacement / games).toFixed(1)) : 0,
+        averagePlacement:
+          games > 0 ? Number((stat.averagePlacement / games).toFixed(1)) : 0,
         top4Rate: games > 0 ? Math.round((stat.top4Count / games) * 100) : 0,
         firstRate: games > 0 ? Math.round((stat.firstCount / games) * 100) : 0,
       };
@@ -323,7 +328,9 @@ export function calculateTftTraitStats(matches: TftMatchForDisplay[]): TftTraitS
     .slice(0, 10);
 }
 
-export function calculateTftUnitStats(matches: TftMatchForDisplay[]): TftUnitStat[] {
+export function calculateTftUnitStats(
+  matches: TftMatchForDisplay[]
+): TftUnitStat[] {
   const statsByUnit = new Map<string, TftUnitStat>();
 
   matches.forEach((match) => {
@@ -364,10 +371,13 @@ export function calculateTftUnitStats(matches: TftMatchForDisplay[]): TftUnitSta
       const games = stat.games;
       return {
         ...stat,
-        averagePlacement: games > 0 ? Number((stat.averagePlacement / games).toFixed(1)) : 0,
+        averagePlacement:
+          games > 0 ? Number((stat.averagePlacement / games).toFixed(1)) : 0,
         top4Rate: games > 0 ? Math.round((stat.top4Rate / games) * 100) : 0,
-        averageTier: games > 0 ? Number((stat.averageTier / games).toFixed(1)) : 0,
-        threeStarRate: games > 0 ? Math.round((stat.threeStarCount / games) * 100) : 0,
+        averageTier:
+          games > 0 ? Number((stat.averageTier / games).toFixed(1)) : 0,
+        threeStarRate:
+          games > 0 ? Math.round((stat.threeStarCount / games) * 100) : 0,
       };
     })
     .sort((a, b) => {
@@ -382,7 +392,9 @@ export function calculateTftUnitStats(matches: TftMatchForDisplay[]): TftUnitSta
     .slice(0, 10);
 }
 
-export function calculateTftAugmentStats(matches: TftMatchForDisplay[]): TftAugmentStat[] {
+export function calculateTftAugmentStats(
+  matches: TftMatchForDisplay[]
+): TftAugmentStat[] {
   const statsByAugment = new Map<string, TftAugmentStat>();
 
   matches.forEach((match) => {
@@ -414,7 +426,8 @@ export function calculateTftAugmentStats(matches: TftMatchForDisplay[]): TftAugm
       const games = stat.games;
       return {
         ...stat,
-        averagePlacement: games > 0 ? Number((stat.averagePlacement / games).toFixed(1)) : 0,
+        averagePlacement:
+          games > 0 ? Number((stat.averagePlacement / games).toFixed(1)) : 0,
         top4Rate: games > 0 ? Math.round((stat.top4Rate / games) * 100) : 0,
         firstRate: games > 0 ? Math.round((stat.firstRate / games) * 100) : 0,
       };
@@ -431,7 +444,9 @@ export function calculateTftAugmentStats(matches: TftMatchForDisplay[]): TftAugm
     .slice(0, 10);
 }
 
-export function calculateTftPatchStats(matches: TftMatchForDisplay[]): TftPatchStat[] {
+export function calculateTftPatchStats(
+  matches: TftMatchForDisplay[]
+): TftPatchStat[] {
   const statsByPatch = new Map<string, TftPatchStat>();
 
   matches.forEach((match) => {
@@ -461,7 +476,8 @@ export function calculateTftPatchStats(matches: TftMatchForDisplay[]): TftPatchS
       const games = stat.games;
       return {
         ...stat,
-        averagePlacement: games > 0 ? Number((stat.averagePlacement / games).toFixed(1)) : 0,
+        averagePlacement:
+          games > 0 ? Number((stat.averagePlacement / games).toFixed(1)) : 0,
         top4Rate: games > 0 ? Math.round((stat.top4Rate / games) * 100) : 0,
         firstRate: games > 0 ? Math.round((stat.firstRate / games) * 100) : 0,
       };
